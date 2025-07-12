@@ -11,7 +11,7 @@ A dynamic, real-time feed where students can anonymously share thoughts, feedbac
 A comprehensive administrative dashboard offering immediate visibility into campus sentiment and trending topics.
 * **PulseLoop Flash:** Provides at-a-glance overviews, high-level sentiment trends, and topic breakdowns for quick insights.
 * **PulseLoop Pro:** Enables deeper, on-demand analysis of specific topics or date ranges using **Gemini 2.5 Pro**. Generate detailed summaries, identify root causes, and receive actionable recommendations.
-* **PulseLoop Boost:** Unlocks advanced, pay-as-you-go analysis with the full power of **Gemini 2.5 Pro's extended context window**, ideal for large-scale strategic intelligence and "dark data" exploration.
+* **PulseLoop Boost:** Unlocks advanced, pay-as-you-go analysis with the full power of **Gemini 2.5 Pro's extended context window**, ideal for large-scale strategic intelligence.
 
 ### **Dark Data Risk Intelligence**
 Leverage AI to analyze automatically flagged and suppressed content ("dark data"). This critical feature helps identify escalating risks, emerging threats, and systemic issues that might otherwise remain hidden, providing an invaluable early warning system for campus safety and well-being.
