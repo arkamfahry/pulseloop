@@ -28,16 +28,12 @@ Easily deploy targeted micro-surveys to gather feedback on events, initiatives, 
 
 PulseLoop’s AI includes a built-in feedback loop, allowing its prompts to continuously adapt and improve based on real-world interactions and performance, making the system smarter and more accurate over time.
 
----
-
 ## 🎯 **Value for Organizations**
 
 * **Enhances Engagement & Well-being:** Offers a safe space for authentic expression and supports proactive interventions before issues escalate.
 * **Protects Brand & Mitigates Risk:** Real-time moderation and "dark data" insights help detect and address crises early.
 * **Enables Smarter Decisions:** Converts qualitative feedback into quantitative insights to guide resource allocation, strategy, and policy.
 * **Builds Trust & Community:** Demonstrates commitment to transparency, feedback, and continuous improvement.
-
----
 
 ## 🚀 **Technology Stack**
 
