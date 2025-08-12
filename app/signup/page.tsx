@@ -4,21 +4,21 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export default function SignIn() {
+export default function SignUp() {
   const { signIn } = useAuthActions();
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   return (
     <div className="flex flex-col gap-8 w-96 mx-auto h-screen justify-center items-center">
-      <p>Welcome to PulseLoop</p>
+      <p>Create a PulseLoop Account</p>
       <form
         className="flex flex-col gap-2 w-full"
         onSubmit={(e) => {
           e.preventDefault();
           const formData = new FormData(e.target as HTMLFormElement);
-          formData.set("flow", "signIn")
+          formData.set("flow", "signUp");
           void signIn("password", formData)
-            .catch((error) => {
+            .catch((error: Error) => {
               setError(error.message);
             })
             .then(() => {
@@ -26,6 +26,13 @@ export default function SignIn() {
             });
         }}
       >
+        <input
+          className="bg-background text-foreground rounded-md p-2 border-2 border-slate-200 dark:border-slate-800"
+          type="text"
+          name="name"
+          placeholder="Enter Name"
+          required
+        />
         <input
           className="bg-background text-foreground rounded-md p-2 border-2 border-slate-200 dark:border-slate-800"
           type="email"
@@ -44,21 +51,21 @@ export default function SignIn() {
           className="bg-foreground text-background rounded-md"
           type="submit"
         >
-          Sign In
+          Sign Up
         </button>
         <div className="flex flex-row gap-2">
-          <span>Don&apos;t have an account?</span>
+          <span>Have an account?</span>
           <a
             className="text-foreground underline hover:no-underline cursor-pointer"
-            href="/signup"
+            href="/signin"
           >
-            Sign Up
+            Sign In
           </a>
         </div>
         {error && (
           <div className="bg-red-500/20 border-2 border-red-500/50 rounded-md p-2">
             <p className="text-foreground font-mono text-xs">
-              Error signing in: {error}
+              Error signing up: {error}
             </p>
           </div>
         )}
