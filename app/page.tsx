@@ -1,10 +1,14 @@
 "use client";
 
+import { Authenticated, Unauthenticated } from "convex/react";
+import { useAuthActions } from "@convex-dev/auth/react";
 import { Button, Navbar, NavbarBrand } from "flowbite-react";
 import Link from "next/link";
 import Image from "next/image";
 
 export default function HomePage() {
+  const { signOut } = useAuthActions();
+  
   return (
     <div className="bg-white dark:bg-gray-900 h-screen flex flex-col">
       <header className="absolute top-0 w-full z-10 bg-transparent">
@@ -14,9 +18,14 @@ export default function HomePage() {
         <span className="self-center whitespace-nowrap text-xl font-semibold dark:text-white">PulseLoop</span>
       </NavbarBrand>
           <div className="flex md:order-2">
-            <Button as={Link} href="/signin">
-              Sign in
-            </Button>
+            <Unauthenticated>
+              <Button as={Link} href="/signin">
+                Sign in
+              </Button>
+            </Unauthenticated>
+            <Authenticated>
+              <Button onClick={() => signOut()}>Sign out</Button>
+            </Authenticated>
           </div>
         </Navbar>
       </header>
@@ -31,9 +40,11 @@ export default function HomePage() {
           Real-Time Feedback Engine
         </h1>
         <div className="mt-10">
-          <Button as={Link} href="/signin" size="xl">
-            Sign In
-          </Button>
+          <Unauthenticated>
+            <Button as={Link} href="/signin" size="xl">
+              Sign In
+            </Button>
+          </Unauthenticated>
         </div>
       </main>
     </div>
