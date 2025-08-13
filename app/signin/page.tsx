@@ -42,13 +42,13 @@ export default function SignIn() {
             >
               <div>
                 <div className="mb-2 block">
-                  <Label htmlFor="email">Email *</Label>
+                  <Label htmlFor="email">Email</Label>
                 </div>
                 <TextInput id="email" name="email" placeholder="Enter your email" required type="email" />
               </div>
               <div>
                 <div className="mb-2 block">
-                  <Label htmlFor="password">Password *</Label>
+                  <Label htmlFor="password">Password</Label>
                 </div>
                 <TextInput id="password" name="password" placeholder="••••••••" required type="password" />
               </div>
