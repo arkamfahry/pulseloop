@@ -43,19 +43,19 @@ export default function SignUp() {
       >
         <div>
           <div className="mb-2 block">
-            <Label htmlFor="name">Name *</Label>
+            <Label htmlFor="name">Name</Label>
           </div>
           <TextInput id="name" name="name" placeholder="Enter your name" required type="text" />
         </div>
         <div>
           <div className="mb-2 block">
-            <Label htmlFor="email">Email *</Label>
+            <Label htmlFor="email">Email</Label>
           </div>
           <TextInput id="email" name="email" placeholder="Enter your email" required type="email" />
         </div>
         <div>
           <div className="mb-2 block">
-            <Label htmlFor="password">Password *</Label>
+            <Label htmlFor="password">Password</Label>
           </div>
           <TextInput id="password" name="password" placeholder="••••••••" required type="password" />
         </div>
@@ -68,12 +68,12 @@ export default function SignUp() {
         </div>
         <Button className="w-full" type="submit">Sign Up</Button>
         <p className="text-sm font-light text-gray-500 dark:text-gray-400">
-          Have an account? <a href="/signin" className="font-medium text-primary-600 hover:underline dark:text-primary-500">Sign Up</a>
+          Have an account? <a href="/signin" className="font-medium text-primary-600 hover:underline dark:text-primary-500">Sign In</a>
         </p>
         {error && (
           <div className="bg-red-500/20 border-2 border-red-500/50 rounded-md p-2">
             <p className="text-foreground font-mono text-xs">
-              Error signing in: {error}
+              Error signing up: {error}
             </p>
           </div>
         )}
