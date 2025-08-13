@@ -2,6 +2,7 @@
 
 import { Button, Navbar, NavbarBrand } from "flowbite-react";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function HomePage() {
   return (
@@ -9,7 +10,7 @@ export default function HomePage() {
       <header className="absolute top-0 w-full z-10 bg-transparent">
         <Navbar fluid rounded className="bg-gray-50 dark:bg-gray-900">
         <NavbarBrand href="/">
-        <img src="/pulseloop.svg" className="mr-3 h-9 w-9" alt="PulseLoop" />
+        <Image src="/pulseloop.svg" width={36} height={36} className="mr-3 h-9 w-9" alt="PulseLoop" />
         <span className="self-center whitespace-nowrap text-xl font-semibold dark:text-white">PulseLoop</span>
       </NavbarBrand>
           <div className="flex md:order-2">
@@ -22,7 +23,7 @@ export default function HomePage() {
 
       <main className="flex flex-1 flex-col items-center justify-center text-center">
         <div className="mb-4">
-        <img src="/pulseloop.svg" className="mr-3 h-12 w-12" alt="PulseLoop" />
+        <Image src="/pulseloop.svg" width={48} height={48} className="mr-3 h-12 w-12" alt="PulseLoop" />
         </div>
         <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-5xl">
           PulseLoop
