@@ -54,27 +54,31 @@ export const publishPost = internalMutation({
 
 export const upvotePost = mutation({
     args: { 
-      postId: v.id("posts"),
-      userId: v.id("users")
+      postId: v.id("posts")
     },
     handler: async (ctx, args) => {
-        const existingVote = await ctx.db.query("votes")
-          .withIndex("vote_by_post_user", (q) => q.eq("post", args.postId).eq("user", args.userId)).first();
-        if (existingVote) {
-            return;
-        }
+      const userId = await getAuthUserId(ctx);
+      if (!userId) {
+        throw new Error("User not authenticated");
+      }
 
-        await ctx.db.insert("votes", {
-            post: args.postId,
-            user: args.userId,
-        });
+      const existingVote = await ctx.db.query("votes")
+        .withIndex("vote_by_post_user", (q) => q.eq("post", args.postId).eq("user", userId)).first();
+      if (existingVote) {
+          return;
+      }
 
-        const post = await ctx.db.get(args.postId);
-        if (post) {
-            await ctx.db.patch(args.postId, {
-                votes: (post.votes ?? 0) + 1,
-            });
-        }
+      await ctx.db.insert("votes", {
+          post: args.postId,
+          user: userId,
+      });
+
+      const post = await ctx.db.get(args.postId);
+      if (post) {
+          await ctx.db.patch(args.postId, {
+              votes: (post.votes ?? 0) + 1,
+          });
+      }
     },
 });
 
