@@ -23,6 +23,11 @@ export const createPost = mutation({
         postId: postId,
         content: args.content,
       });
+
+      await ctx.scheduler.runAfter(0, internal.analysis.EmbedPost, {
+        postId: postId,
+        content: args.content,
+      });
     },
 });
 
@@ -51,6 +56,19 @@ export const publishPost = internalMutation({
         }
     },
 });
+
+export const embedPost = internalMutation({
+    args: {
+        postId: v.id("posts"),
+        embedding: v.array(v.number()),
+    },
+    handler: async (ctx, args) => {
+        await ctx.db.patch(args.postId, {
+            contentEmbedding: args.embedding,
+        });
+    },
+});
+
 
 export const upvotePost = mutation({
     args: { 

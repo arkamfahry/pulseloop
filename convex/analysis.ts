@@ -273,63 +273,93 @@ Return the output as a JSON object with three keys:
 `;
 
 export const AnalyzePost = internalAction({
-    args: {
-        postId: v.id("posts"),  
-        content: v.string() 
-    },
-    handler: async (ctx, args) => {
-        const prompt = promptTemplate.replace("{CONTENT}", args.content)
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash-lite",
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: "OBJECT",
-                    properties: {
-                      keywords: {
-                        type: "ARRAY",
-                        items: {
-                          type: "STRING"
-                        },
-                        minItems: 3,
-                        maxItems: 3
-                      },
-                      sentiment: {
-                        type: "STRING",
-                        enum: ["positive", "neutral", "negative"]
-                      },
-                      safety: {
-                        type: "STRING",
-                        enum: ["safe", "unsafe"]
-                      }
-                    },
-                    required: ["keywords", "sentiment", "safety"],
-                    propertyOrdering: ["keywords", "sentiment", "safety"]
-                },
-                thinkingConfig: {
-                  thinkingBudget: 0,
-                },
-            }
+  args: {
+    postId: v.id("posts"),
+    content: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const prompt = promptTemplate.replace("{CONTENT}", args.content);
+    const analysisResponse = await ai.models.generateContent({
+      model: "gemini-2.5-flash-lite",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "OBJECT",
+          properties: {
+            keywords: {
+              type: "ARRAY",
+              items: {
+                type: "STRING",
+              },
+              minItems: 3,
+              maxItems: 3,
+            },
+            sentiment: {
+              type: "STRING",
+              enum: ["positive", "neutral", "negative"],
+            },
+            safety: {
+              type: "STRING",
+              enum: ["safe", "unsafe"],
+            },
+          },
+          required: ["keywords", "sentiment", "safety"],
+          propertyOrdering: ["keywords", "sentiment", "safety"],
+        },
+        thinkingConfig: {
+          thinkingBudget: 0,
+        },
+      },
+    });
+
+    if (analysisResponse.text) {
+      interface analysisResult {
+        keywords: string[];
+        sentiment: "positive" | "neutral" | "negative";
+        safety: "safe" | "unsafe";
+      }
+
+      const result: analysisResult = JSON.parse(analysisResponse.text);
+
+      await ctx.runMutation(internal.post.publishPost, {
+        postId: args.postId,
+        sentiment: result.sentiment,
+        safety: result.safety,
+        keyWords: result.keywords,
+      });
+    } else {
+      console.error("Analysis failed");
+    }
+  },
+});
+
+export const EmbedPost = internalAction({
+  args: {
+    postId: v.id("posts"),
+    content: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const embeddingResponse = await ai.models.embedContent({
+      model: "gemini-embedding-001",
+      contents: args.content,
+    });
+
+    if (
+      embeddingResponse.embeddings &&
+      embeddingResponse.embeddings.length > 0
+    ) {
+      const embeddingValues = embeddingResponse.embeddings[0].values;
+      if (embeddingValues) {
+        await ctx.runMutation(internal.post.embedPost, {
+          postId: args.postId,
+          embedding: embeddingValues,
         });
-
-        if (response.text) {
-            interface analysisResult {
-                keywords: string[];
-                sentiment: "positive" | "neutral" | "negative";
-                safety: "safe" | "unsafe";
-            }
-            
-            const result: analysisResult = JSON.parse(response.text);
-
-            await ctx.runMutation(internal.post.publishPost, {
-                postId: args.postId,
-                sentiment: result.sentiment,
-                safety: result.safety,
-                keyWords: result.keywords,
-            });
-        } else {
-            console.error('No text content in the response');
-        }
-    },
+      } else {
+        console.error("No embedding values found");
+      }
+    } else {
+      console.error("Embedding failed");
+    }
+  },
 });
