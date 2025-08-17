@@ -20,8 +20,7 @@ export default defineSchema({
 
   feedbacks: defineTable({
     content: v.string(),
-    redactedContent: v.optional(v.string()),
-    contentEmbedding: v.optional(v.array(v.number())),
+    embedding: v.optional(v.array(v.number())),
     sentiment: v.optional(
       v.union(
         v.literal("positive"),
@@ -47,8 +46,8 @@ export default defineSchema({
         "keywords",
       ],
     })
-    .vectorIndex("by_contentEmbedding", {
-      vectorField: "contentEmbedding",
+    .vectorIndex("by_embedding", {
+      vectorField: "embedding",
       dimensions: 768,
       filterFields: [
         "user",

@@ -30,13 +30,11 @@ export const moderateFeedback = internalMutation({
   args: {
     feedbackId: v.id("feedbacks"),
     approval: v.union(v.literal("approved"), v.literal("rejected")),
-    redactedContent: v.string(),
   },
   handler: async (ctx, args) => {
     if (args.approval === "approved") {
       await ctx.db.patch(args.feedbackId, {
         approval: args.approval,
-        redactedContent: args.redactedContent,
       });
 
       const feedback = await ctx.db.get(args.feedbackId);
@@ -46,16 +44,11 @@ export const moderateFeedback = internalMutation({
 
       await ctx.scheduler.runAfter(0, internal.analysis.analyzeFeedback, {
         feedbackId: feedback._id,
-        originalContent: feedback.content,
-        moderationResult: {
-          approval: feedback.approval || "approved",
-          redactedContent: feedback.redactedContent || "",
-        },
+        content: feedback.content,
       });
     } else {
       await ctx.db.patch(args.feedbackId, {
         approval: args.approval,
-        redactedContent: args.redactedContent,
       });
     }
   },
@@ -69,14 +62,12 @@ export const analyzeFeedback = internalMutation({
       v.literal("negative"),
       v.literal("neutral"),
     ),
-    approval: v.union(v.literal("approved"), v.literal("rejected")),
     keywords: v.array(v.string()),
   },
   handler: async (ctx, args) => {
     await ctx.db.patch(args.feedbackId, {
       sentiment: args.sentiment,
       keywords: args.keywords,
-      approval: args.approval,
       isPublished: true,
     });
 
@@ -99,12 +90,12 @@ export const embedFeedback = internalMutation({
   },
   handler: async (ctx, args) => {
     await ctx.db.patch(args.feedbackId, {
-      contentEmbedding: args.embedding,
+      embedding: args.embedding,
     });
   },
 });
 
-export const upvotePost = mutation({
+export const upvoteFeedback = mutation({
   args: {
     feedbackId: v.id("feedbacks"),
   },

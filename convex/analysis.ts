@@ -6,33 +6,32 @@ import { internal } from "./_generated/api";
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const moderationPrompt = `
-You are a approval moderator for a real-time feedback pipeline. Input: a single string named "post" (placeholder: {CONTENT}). Follow these rules EXACTLY and return exactly one JSON object (no extra text):
+You are an approval moderator for a real-time feedback pipeline. Input: a single string named "post" ({CONTENT}). Follow these rules EXACTLY and return exactly one JSON object (no extra text):
 
-1) PREPROCESSING FOR APPROVAL
-   - Replace any URLs, emails, phone numbers, and exact addresses with the token "<PII>".
-   - Keep the original un-redacted post internally for analysis of whether it contains PII; but the output should include only the redacted text.
-   - Remove/ignore explicit code blocks or quoted logs for the purpose of PII redaction (they must still be scanned for abusive/PII content).
+1) PREPROCESSING
+- Scan the post for PII (emails, URLs, phone numbers, exact addresses, national IDs, or full names intended to identify a private person).
+- Ignore explicit code blocks or quoted logs when scanning for PII, but still consider them for abusive or unsafe content.
 
-2) APPLY APPROVAL RULES (mark "rejected" if **any** of the following are present):
-   A. Non-constructive rant/low-effort vent or empty/only-PII (e.g., "Ughhh this app sucks!!" with no actionable detail).
-   B. Hate, targeted harassment, or demeaning content toward protected classes or individuals.
-   C. Profanity/obscene sexual language used abusively (not constructive).
-   D. Threats of violence or calls for harm.
-   E. Coded hostile language / dog whistles / stereotypes implying hostility.
-   F. Personal Identifiable Information (emails, phone numbers, home addresses, national IDs, or full names intended to identify a private person) — treat as rejected.
-   G. Sarcasm/passive-aggressive remarks that demean a person or group.
-   H. Ambiguously mocking or condescending content reasonably interpretable as harmful.
-
-   If none of the above apply, mark "approved".
+2) APPROVAL RULES
+- Mark "rejected" if **any** of the following are present:
+  A. Non-constructive rant, low-effort vent, or empty/only-PII posts.
+  B. Hate, targeted harassment, or demeaning content toward protected classes or individuals.
+  C. Profanity/obscene sexual language used abusively.
+  D. Threats of violence or calls for harm.
+  E. Coded hostile language, dog whistles, or stereotypes implying hostility.
+  F. Personal Identifiable Information (emails, phone numbers, addresses, national IDs, full names).
+  G. Sarcasm or passive-aggressive remarks that demean a person or group.
+  H. Ambiguous mocking or condescending content reasonably interpretable as harmful.
+- If none of the above apply, mark "approved".
 
 3) OUTPUT FORMAT
-   - Return exactly one JSON object with only these two keys:
-     { "approval": "<approved|rejected>", "redactedContent": "<the post with PII replaced by <PII> and code blocks removed/ignored for keyword purposes>" }
-   - "redactedContent" must preserve the text structure but with PII replaced by "<PII>" and any removed code blocks replaced by the token "<CODE_BLOCK>".
-   - Do not include any other keys, commentary, or explanation.
+- Return exactly one JSON object with a single key:
+  { "approval": "<approved|rejected>" }
+- Do not include any other text, commentary, or explanation.
 
-Example output:
-{ "approval": "rejected", "redactedContent": "Contact me at <PII> — I can help." }
+Example outputs:
+{ "approval": "approved" }
+{ "approval": "rejected" }
 `;
 
 export const moderateFeedback = internalAction({
@@ -54,12 +53,9 @@ export const moderateFeedback = internalAction({
               type: "STRING",
               enum: ["approved", "rejected"],
             },
-            redactedContent: {
-              type: "STRING",
-            },
           },
-          required: ["approval", "redactedContent"],
-          propertyOrdering: ["approval", "redactedContent"],
+          required: ["approval"],
+          propertyOrdering: ["approval"],
         },
         thinkingConfig: {
           thinkingBudget: 0,
@@ -70,7 +66,6 @@ export const moderateFeedback = internalAction({
     if (response.text) {
       interface result {
         approval: "approved" | "rejected";
-        redactedContent: string;
       }
 
       const result: result = JSON.parse(response.text);
@@ -78,7 +73,6 @@ export const moderateFeedback = internalAction({
       await ctx.runMutation(internal.feedback.moderateFeedback, {
         feedbackId: args.feedbackId,
         approval: result.approval,
-        redactedContent: result.redactedContent,
       });
     } else {
       console.error("Moderation failed");
@@ -87,79 +81,56 @@ export const moderateFeedback = internalAction({
 });
 
 const analysisPrompt = `
-You are an analytical extractor that produces the final JSON for the feedback engine. You will be provided these inputs: 
-  - "original_content": the original unmodified post (placeholder: {CONTENT}).
-  - "moderation": the JSON result produced by the Moderation prompt (placeholder: {MODERATION_RESULT}), which contains:
-      { "approval": "<approved|rejected>", "redactedContent": "<redacted text>" }
+You are an analytical extractor that produces the final JSON for the feedback engine. Input:
+- "content": the post text ({CONTENT})
 
-TASK: Using the moderation result and the rules below, return exactly one JSON object (no extra text) with only these keys:
-  1. "keywords" — array of 1 to 3 strings (or [] if moderation.approval == "rejected").
-  2. "sentiment" — one of "positive", "neutral", or "negative".
-  3. "approval" — copy the "approval" value from the moderation input (i.e., "approved" or "rejected").
+Return exactly one JSON object with keys:
+{ "keywords": [...], "sentiment": "..." }
 
-PROCESSING & RULES (follow exactly):
+PROCESS:
 
 A) PREPROCESSING
-   - Work from the "redactedContent" for keyword extraction. Use "original_content" only to confirm PII/approval if needed.
-   - Remove or ignore explicit code blocks and markup for keyword extraction (they were replaced by "<CODE_BLOCK>" by moderation).
-   - Treat "<PII>" tokens as PII — they must NOT appear in keywords.
+- Use "content" for extraction.
+- Ignore code blocks (<CODE_BLOCK>) and treat <PII> as PII (do not include in keywords).
+- Lowercase, remove punctuation except internal apostrophes, collapse spaces, trim whitespace.
+- Correct consistent spelling errors if present.
 
-B) KEYWORD RULES (exact pipeline)
-   1. Tokenization & normalization:
-      - Lowercase everything.
-      - Strip all punctuation except internal apostrophes inside words.
-      - Collapse multiple whitespace into single space.
-      - Trim leading/trailing whitespace.
-   2. Remove stop/generic words BEFORE selecting keywords. The following words are forbidden as keywords:
-      good, bad, nice, great, love, use, because, from, thing, stuff, help, thanks, thank, issue, problem, app, product, feature, user
-   3. Stemming:
-      - Apply a Porter-style stemmer to tokens.
-      - For meaningful multi-word concepts prefer a 2-word phrase (max) if it adds value (stem each token and join with single space).
-   4. Selection:
-      - Choose 1-3 high-value keywords/phrases that capture actionable topics, bugs, or product areas.
-      - Order by importance (most important first).
-      - If moderation.approval == "rejected", set "keywords": [] (empty array) regardless of findings.
-      - If no high-value keywords exist but moderation.approval == "approved", return the single best stemmed keyword.
+B) KEYWORD EXTRACTION
+- Remove stop/generic words: good, bad, nice, great, love, use, because, from, thing, stuff, help, thanks, thank, issue, problem, app, product, feature, user.
+- Lemmatize tokens.
+- Combine adjacent high-value tokens into meaningful 2-word phrases:
+    - Adjective + noun (e.g., "slow wifi")
+    - Noun + noun (e.g., "uni work")
+- Maximum 2 words per keyword; join with single space.
+- Select 1-3 high-value keywords/phrases, ordered by importance.
+- If no high-value keywords exist, return single best lemmatized keyword.
+- Keywords: lowercase, punctuation removed, trimmed, max 2 words.
 
-   5. Keyword format constraints:
-      - Lowercase, punctuation removed, stemmed, trimmed, single spaces, max two words per keyword.
-
-C) SENTIMENT RULES
-   - Determine overall sentiment from content, emojis, punctuation, and tone.
-   - Sarcasm/irony that implies criticism => "negative".
-   - If mixed, pick predominant; if tie and one is negative/mocking, prefer "negative".
-   - Short posts (<=5 tokens): use emojis/punctuation as tie-breakers; ambiguous => "neutral".
-   - Emoji mapping: 👍🙂 => positive, 😡👎 => negative, 😐 => neutral.
-   - Output must be exactly one of: "positive", "neutral", "negative".
+C) SENTIMENT
+- Determine "positive", "neutral", or "negative".
+- Use tone, punctuation, emojis (👍🙂=positive, 😡👎=negative, 😐=neutral).
+- Sarcasm/irony implies negative.
+- Short posts (≤5 tokens): emojis/punctuation as tie-breakers; ambiguous → neutral.
+- If mixed, pick predominant; ties with negative/mocking → negative.
 
 D) FINAL OUTPUT
-   - Return exactly one JSON object with only these keys: "keywords", "sentiment", "approval".
-   - If moderation.approval == "rejected", ensure "keywords": [].
-   - Ensure all keywords comply with the format rules above.
-   - Do not include any other text or metadata.
+- Return exactly one JSON object with keys: keywords, sentiment.
+- No extra text or metadata.
 
-Example (when moderation indicates approved):
-{ "keywords": ["crash", "save"], "sentiment": "negative", "approval": "approved" }
-
-Example (when moderation indicates rejected):
-{ "keywords": [], "sentiment": "negative", "approval": "rejected" }
+EXAMPLES:
+{ "keywords": ["slow wifi", "library", "uni work"], "sentiment": "negative" }
+{ "keywords": ["crash"], "sentiment": "negative" }
 `;
 
 export const analyzeFeedback = internalAction({
   args: {
     feedbackId: v.id("feedbacks"),
-    originalContent: v.string(),
-    moderationResult: v.object({
-      approval: v.union(v.literal("approved"), v.literal("rejected")),
-      redactedContent: v.string(),
-    }),
+    content: v.string(),
   },
   handler: async (ctx, args) => {
-    const prompt = analysisPrompt
-      .replace("{CONTENT}", args.originalContent)
-      .replace("{MODERATION_RESULT}", JSON.stringify(args.moderationResult));
+    const prompt = analysisPrompt.replace("{CONTENT}", args.content);
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-lite",
+      model: "gemini-2.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -178,13 +149,9 @@ export const analyzeFeedback = internalAction({
               type: "STRING",
               enum: ["positive", "neutral", "negative"],
             },
-            approval: {
-              type: "STRING",
-              enum: ["approved", "rejected"],
-            },
           },
-          required: ["keywords", "sentiment", "approval"],
-          propertyOrdering: ["keywords", "sentiment", "approval"],
+          required: ["keywords", "sentiment"],
+          propertyOrdering: ["keywords", "sentiment"],
         },
         thinkingConfig: {
           thinkingBudget: 0,
@@ -196,7 +163,6 @@ export const analyzeFeedback = internalAction({
       interface result {
         keywords: string[];
         sentiment: "positive" | "neutral" | "negative";
-        approval: "approved" | "rejected";
       }
 
       const result: result = JSON.parse(response.text);
@@ -204,7 +170,6 @@ export const analyzeFeedback = internalAction({
       await ctx.runMutation(internal.feedback.analyzeFeedback, {
         feedbackId: args.feedbackId,
         sentiment: result.sentiment,
-        approval: result.approval,
         keywords: result.keywords,
       });
     } else {
