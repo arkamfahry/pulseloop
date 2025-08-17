@@ -219,20 +219,20 @@ export const embedFeedback = internalAction({
     content: v.string(),
   },
   handler: async (ctx, args) => {
-    const embeddingResponse = await ai.models.embedContent({
+    const response = await ai.models.embedContent({
       model: "gemini-embedding-001",
       contents: args.content,
     });
 
     if (
-      embeddingResponse.embeddings &&
-      embeddingResponse.embeddings.length > 0
+      response.embeddings &&
+      response.embeddings.length > 0
     ) {
-      const embeddingValues = embeddingResponse.embeddings[0].values;
-      if (embeddingValues) {
+      const values = response.embeddings[0].values;
+      if (values) {
         await ctx.runMutation(internal.feedback.embedFeedback, {
           feedbackId: args.feedbackId,
-          embedding: embeddingValues,
+          embedding: values,
         });
       } else {
         console.error("No embedding values found");
