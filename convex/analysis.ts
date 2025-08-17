@@ -150,7 +150,7 @@ export const analyzeFeedback = internalAction({
     feedbackId: v.id("feedbacks"),
     originalContent: v.string(),
     moderationResult: v.object({
-      safety: v.string(),
+      safety: v.union(v.literal("approved"), v.literal("rejected")),
       redactedContent: v.string(),
     }),
   },
