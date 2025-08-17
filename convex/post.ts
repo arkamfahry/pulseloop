@@ -36,21 +36,21 @@ export const publishPost = internalMutation({
         postId: v.id("posts"),
         sentiment: v.union(v.literal("positive"), v.literal("neutral"), v.literal("negative")),
         safety: v.union(v.literal("safe"), v.literal("unsafe"), v.literal("ambiguous")),
-        keyWords: v.array(v.string()),
+        keywords: v.array(v.string()),
     },
     handler: async (ctx, args) => {
         if (args.safety === "safe") {
           await ctx.db.patch(args.postId, {
             sentiment: args.sentiment,
             safety: args.safety,
-            keyWords: args.keyWords,
+            keywords: args.keywords,
             isPublished: true,
           });    
         } else {
           await ctx.db.patch(args.postId, {
             sentiment: args.sentiment,
             safety: args.safety,
-            keyWords: args.keyWords,
+            keywords: args.keywords,
             isPublished: false,
           });
         }
