@@ -20,7 +20,6 @@ export default defineSchema({
 
   feedbacks: defineTable({
     content: v.string(),
-    embedding: v.optional(v.array(v.number())),
     sentiment: v.optional(
       v.union(
         v.literal("positive"),
@@ -38,25 +37,25 @@ export default defineSchema({
     .index("by_isPublished", ["isPublished"])
     .searchIndex("by_content", {
       searchField: "content",
-      filterFields: [
-        "user",
-        "isPublished",
-        "sentiment",
-        "approval",
-        "keywords",
-      ],
-    })
-    .vectorIndex("by_embedding", {
-      vectorField: "embedding",
-      dimensions: 768,
-      filterFields: [
-        "user",
-        "isPublished",
-        "sentiment",
-        "approval",
-        "keywords",
-      ],
+      filterFields: ["user", "isPublished", "sentiment", "keywords"],
     }),
+
+  feedbackEmbeddings: defineTable({
+    embedding: v.optional(v.array(v.number())),
+    sentiment: v.optional(
+      v.union(
+        v.literal("positive"),
+        v.literal("negative"),
+        v.literal("neutral"),
+      ),
+    ),
+    keywords: v.optional(v.array(v.string())),
+    feedback: v.id("feedbacks"),
+  }).vectorIndex("by_embedding", {
+    vectorField: "embedding",
+    dimensions: 768,
+    filterFields: ["sentiment", "keywords"],
+  }),
 
   votes: defineTable({
     feedback: v.id("feedbacks"),

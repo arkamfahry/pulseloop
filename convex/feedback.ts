@@ -89,8 +89,16 @@ export const embedFeedback = internalMutation({
     embedding: v.array(v.number()),
   },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.feedbackId, {
+    const feedback = await ctx.db.get(args.feedbackId);
+    if (!feedback) {
+      throw new Error("Feedback not found");
+    }
+
+    await ctx.db.insert("feedbackEmbeddings", {
+      feedback: feedback._id,
       embedding: args.embedding,
+      sentiment: feedback.sentiment,
+      keywords: feedback.keywords,
     });
   },
 });
