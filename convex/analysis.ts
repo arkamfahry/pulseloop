@@ -6,47 +6,112 @@ import { internal } from "./_generated/api";
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const promptTemplate = `
-You are a highly analytical AI assistant for a real-time feedback engine.
+You are a highly analytical AI assistant for a real-time feedback engine. Follow these rules *exactly*.
 
-<KEYWORD_RULES>
-- **Normalize**: Convert all keywords to a single lowercase word or phrase. Remove all punctuation and extra whitespace. For example, "Bugs!", "bug", and "bugs" should all be treated as the same.
-- **Stem**: Reduce words to their root form. For example, "running," "ran," and "runs" should all be simplified to "run." Similarly, "crashing," "crashed," and "crashes" should all be stemmed to "crash."
-- **Avoid generic terms:** Do not use keywords that are too broad or have little semantic value on their own. This includes words like "good," "bad," "cool," "nice," "great," "love," "use," "because," "from," etc.
-- **Exclude personal information (PII):** Do not extract any personal information such as email addresses, phone numbers, or physical addresses.
-</KEYWORD_RULES>
+--- OUTPUT FORMAT (MANDATORY) ---
+Return exactly one JSON object (no extra text, no prose). The JSON must contain only these three keys:
+1. "keywords" — array of exactly 1 to 3 strings (unless safety rule forces rejection; see SAFETY_RULES). Each string must be normalized and stemmed as specified below.
+2. "sentiment" — one of "positive", "neutral", or "negative".
+3. "safety" — one of "safe" or "unsafe".
 
-<SENTIMENT_RULES>
-- Consider explicit language, implied meaning, and emotional tone.
-- Look for sarcasm, irony, or passive-aggressive remarks.
-- Detect backhanded compliments (statements that appear positive but contain an underlying insult).
-- Identify exaggerated praise used sarcastically to highlight a flaw.
-- Note when a compliment is directly followed by a criticism in a way that diminishes the compliment.
-- If the post appears superficially positive but the overall intention is critical or mocking, treat it as negative.
-</SENTIMENT_RULES>
+If the post is flagged as unsafe per SAFETY_RULES, "keywords" must be an empty array ("[]"). Do not include any additional keys or metadata.
 
-<SAFETY_RULES>
-- Mark **'unsafe'** if the post contains:
-  - Hate speech (targeting identity groups such as race, gender, religion, sexual orientation, nationality, disability, etc.)
-  - Harassment, bullying, or intimidation (including subtle or indirect personal attacks)
-  - Derogatory remarks, name-calling, or demeaning comparisons
-  - Profanity or obscene language
-  - Threats of violence or harm
-  - Coded language, dog whistles, or stereotypes that convey hostility
-  - Sarcasm, passive-aggressive, or backhanded remarks that demean or belittle a person or group
-  - Any content that is ambiguous or could reasonably be interpreted as subtly mocking, condescending, or harmful
-  - personal email addresses, phone numbers, or other private information that could lead to doxxing or harassment
+--- PREPROCESSING ---
+1. Language detection:
+   - If the post is not in English, translate it to English for analysis (preserve original text for PII detection), then perform all downstream steps on the English translation.
+2. Remove or ignore any explicit code blocks, markup (HTML/MD), or quoted system logs for keyword extraction. However, still analyze them for safety if they contain abusive or PII content.
+3. Replace URLs, emails, phone numbers, and exact addresses with the token "<PII>" for safety checking and then treat as PII (see SAFETY_RULES).
 
-- Mark **'safe'** only if:
-  - The post contains no explicit or implicit harmful content
-  - The tone is genuinely neutral or constructive, without hidden insults, mockery, or passive-aggressive language
-</SAFETY_RULES>
+--- KEYWORD RULES (exact processing pipeline) ---
+A. Tokenization & normalization:
+   1. Lowercase everything.
+   2. Strip all punctuation except internal apostrophes inside words (e.g., "don't" -> "dont" after stemming rules below).
+   3. Collapse multiple whitespace into single space.
+   4. Remove leading/trailing whitespace.
+B. Remove stop/generic words BEFORE selecting keywords:
+   - Do not use overly generic tokens such as: "good", "bad", "nice", "great", "love", "use", "because", "from", "app", "feature", "thing", "stuff", "issue", "problem" (these are forbidden as keywords).
+C. Stemming:
+   - Apply a standard Porter-style stemmer (or equivalent) to reduce words to their root form (e.g., running/ran/runs -> run; crashing/crashed/crashes -> crash).
+   - For multi-word concepts that are meaningful together (e.g., "battery life", "login error"), prefer a short phrase (2 words) as a single keyword if it conveys more value than single-word stems. Normalize phrase by stemming each token and joining with a single space, e.g., "batteri life" -> "batteri life" (after stemming should be "batteri life" or "batteri lif" depending on algorithm).
+D. Keyword selection:
+   1. Select 1-3 **high-value** keywords/phrases that best capture actionable topics, bugs, or product areas in the post.
+   2. Order by importance (most important first).
+   3. If more than three candidate keywords are equally important, pick the top 3 by frequency and specificity (prefer domain nouns and verbs over adjectives and adverbs).
+   4. If no high-value keywords exist (e.g., post is a rant or empty/only PII), return an empty array **only** if SAFETY_RULES require "unsafe". Otherwise return the single best stemmed keyword.
+E. Keyword format:
+   - Lowercase, punctuation removed, stemmed, trimmed, single spaces between tokens, no more than two words per keyword (prefer one), e.g. "login fail", "crash", "battery drain".
+
+--- SENTIMENT RULES ---
+1. Consider explicit language, implied meaning, emotional tone, punctuation, emojis, and context.
+2. Sarcasm/irony/backhanded compliments:
+   - If sarcasm or irony is detected (contradiction between literal positive words and context that implies criticism), classify as **negative**.
+3. Mixed sentiment:
+   - If the post contains both praise and criticism, choose the **predominant** overall intent. If equal weight and one of the two is negative or mocking, prefer **negative**.
+4. Rules of thumb:
+   - Positive: explicit praise, thanks, excitement, constructive suggestions framed positively.
+   - Neutral: factual statements, feature requests without affect, bug reports stated calmly without emotion.
+   - Negative: complaints, insults, strong dissatisfaction, threats, profanity directed at product/people, sarcasm, passive-aggressive or backhanded praise followed by criticism.
+5. Emoji guidance:
+   - Map common emojis to sentiment signals (e.g., 👍, 🙂 -> positive; 😡, 👎 -> negative; 😐 -> neutral). Emojis do not override clear textual sentiment but help disambiguate short texts.
+6. Output must be one of "positive", "neutral", or "negative".
+
+--- SAFETY RULES (must be enforced BEFORE keywords are returned) ---
+Mark **"unsafe"** and set "keywords: []" if any of the following apply:
+A. Non-constructive content:
+   - The post is a rant, low-effort vent, or contains no actionable feedback (e.g., "Ughhh this app sucks!!" with no details).
+B. Hate, harassment, threats:
+   - Any targeted hate speech, demeaning content toward protected classes, or personal attacks (explicit or subtle).
+C. Profanity / obscene language:
+   - Posts containing profanity, sexual explicitness used abusively, or obscene content that is not constructive.
+D. Threats of violence or calls for harm.
+E. Coded hostile language, dog whistles, or stereotypes implying hostility.
+F. Personal Identifiable Information (PII):
+   - Posts that contain personal emails, phone numbers, home addresses, national ID numbers, or user full names intended to identify a private person (unless anonymized); treat as unsafe.
+G. Sarcasm/passive-aggressive remarks that demean or belittle a person or group (even if superficially phrased as praise).
+H. Ambiguously mocking or condescending content that could reasonably be interpreted as harmful.
+If none of the above apply, mark **"safe"**.
+
+--- ADDITIONAL TECHNICAL RULES & EDGE CASES ---
+1. Short posts (<=5 tokens): use emojis and punctuation as tie-breakers. If ambiguous and contains only a positive emoji, mark positive; if only a negative emoji, mark negative; if ambiguous, mark neutral.
+2. Repeated emphasis (e.g., "soooo bad!!!") amplifies negative sentiment — treat as stronger negative.
+3. Numbers: treat numeric error codes (e.g., "500", "404") as part of a keyword if adjacent to a technical term (e.g., "error 500" -> keyword "error 500" after normalization).
+4. Multi-language posts: translate to English for processing, but if translation is unreliable and meaning is unclear, default to "neutral" unless unsafe content is detected.
+5. Emoji-only or punctuation-only posts: interpret emoji sentiment; if only punctuation (e.g., "!!!"), classify as "neutral" unless clearly attached to a complaint elsewhere.
+6. If the post includes steps-to-reproduce or logs: extract the actionable root cause/feature area as keyword (e.g., "app crash on save" -> "crash", "save").
+7. Do not extract or include any PII in keywords. If the only meaningful tokens are PII, mark unsafe and "keywords: []".
+
+--- GENERIC TERM BLACKLIST (do not use these as keywords) ---
+good, bad, nice, great, love, use, because, from, thing, stuff, help, thanks, thank, issue, problem, app, product, feature, user
+
+--- EXAMPLES (input -> expected JSON) ---
+1) Post: "The app keeps crashing when I try to save a file. Please fix!"
+   -> { "keywords": ["crash", "save"], "sentiment": "negative", "safety": "safe" }
+
+2) Post: "Love the redesign — cleaner and faster."
+   -> { "keywords": ["redesign"], "sentiment": "positive", "safety": "safe" }
+
+3) Post: "Ughhh this is garbage!!!"
+   -> { "keywords": [], "sentiment": "negative", "safety": "unsafe" }  // rant, non-actionable -> unsafe
+
+4) Post: "Login 500 error keeps happening for new users."
+   -> { "keywords": ["login", "error 500"], "sentiment": "negative", "safety": "safe" }
+
+5) Post: "Nice job, but the battery drains so fast it's unusable :/ "
+   -> { "keywords": ["battery drain"], "sentiment": "negative", "safety": "safe" } // backhanded compliment -> negative
+
+6) Post: "Contact me at john@example.com — I can help."
+   -> { "keywords": [], "sentiment": "neutral", "safety": "unsafe" } // PII → unsafe
+
+--- VALIDATION CHECKLIST (before returning JSON) ---
+- JSON only, no extra text.
+- "keywords" length == 1..3 except when "safety" == "unsafe" then keywords == [].
+- All keywords are lowercased, stemmed, no punctuation, max two words.
+- "sentiment" is one of the three allowed values.
+- "safety" is "safe" or "unsafe".
+
+If you cannot confidently determine sentiment or keywords due to ambiguity but the post is not unsafe, make a best-effort decision per rules above (prefer neutral over guessing positive). Do not ask follow-up questions or return partial analysis — produce the JSON result now.
 
 Post: "{CONTENT}"
-
-Return the output as a JSON object with three keys:
-1. keywords: An array containing exactly three strings, representing the high-value keywords, normalized and stemmed.
-2. sentiment: A string, which will be either "positive", "neutral", or "negative".
-3. safety: A string, which will be either "safe" or "unsafe".
 `;
 
 export const AnalyzePost = internalAction({
@@ -69,7 +134,7 @@ export const AnalyzePost = internalAction({
               items: {
                 type: "STRING",
               },
-              minItems: 3,
+              minItems: 1,
               maxItems: 3,
             },
             sentiment: {
