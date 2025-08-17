@@ -6,14 +6,14 @@ import { internal } from "./_generated/api";
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const moderationPrompt = `
-You are a safety moderator for a real-time feedback pipeline. Input: a single string named "post" (placeholder: {CONTENT}). Follow these rules EXACTLY and return exactly one JSON object (no extra text):
+You are a approval moderator for a real-time feedback pipeline. Input: a single string named "post" (placeholder: {CONTENT}). Follow these rules EXACTLY and return exactly one JSON object (no extra text):
 
-1) PREPROCESSING FOR SAFETY
+1) PREPROCESSING FOR APPROVAL
    - Replace any URLs, emails, phone numbers, and exact addresses with the token "<PII>".
    - Keep the original un-redacted post internally for analysis of whether it contains PII; but the output should include only the redacted text.
    - Remove/ignore explicit code blocks or quoted logs for the purpose of PII redaction (they must still be scanned for abusive/PII content).
 
-2) APPLY SAFETY RULES (mark "rejected" if **any** of the following are present):
+2) APPLY APPROVAL RULES (mark "rejected" if **any** of the following are present):
    A. Non-constructive rant/low-effort vent or empty/only-PII (e.g., "Ughhh this app sucks!!" with no actionable detail).
    B. Hate, targeted harassment, or demeaning content toward protected classes or individuals.
    C. Profanity/obscene sexual language used abusively (not constructive).
@@ -27,12 +27,12 @@ You are a safety moderator for a real-time feedback pipeline. Input: a single st
 
 3) OUTPUT FORMAT
    - Return exactly one JSON object with only these two keys:
-     { "safety": "<approved|rejected>", "redactedContent": "<the post with PII replaced by <PII> and code blocks removed/ignored for keyword purposes>" }
+     { "approval": "<approved|rejected>", "redactedContent": "<the post with PII replaced by <PII> and code blocks removed/ignored for keyword purposes>" }
    - "redactedContent" must preserve the text structure but with PII replaced by "<PII>" and any removed code blocks replaced by the token "<CODE_BLOCK>".
    - Do not include any other keys, commentary, or explanation.
 
 Example output:
-{ "safety": "rejected", "redactedContent": "Contact me at <PII> — I can help." }
+{ "approval": "rejected", "redactedContent": "Contact me at <PII> — I can help." }
 `;
 
 export const moderateFeedback = internalAction({
@@ -50,7 +50,7 @@ export const moderateFeedback = internalAction({
         responseSchema: {
           type: "OBJECT",
           properties: {
-            safety: {
+            approval: {
               type: "STRING",
               enum: ["approved", "rejected"],
             },
@@ -58,8 +58,8 @@ export const moderateFeedback = internalAction({
               type: "STRING",
             },
           },
-          required: ["safety", "redactedContent"],
-          propertyOrdering: ["safety", "redactedContent"],
+          required: ["approval", "redactedContent"],
+          propertyOrdering: ["approval", "redactedContent"],
         },
         thinkingConfig: {
           thinkingBudget: 0,
@@ -69,7 +69,7 @@ export const moderateFeedback = internalAction({
 
     if (response.text) {
       interface result {
-        safety: "approved" | "rejected";
+        approval: "approved" | "rejected";
         redactedContent: string;
       }
 
@@ -77,7 +77,7 @@ export const moderateFeedback = internalAction({
 
       await ctx.runMutation(internal.feedback.moderateFeedback, {
         feedbackId: args.feedbackId,
-        safety: result.safety,
+        approval: result.approval,
         redactedContent: result.redactedContent,
       });
     } else {
@@ -90,17 +90,17 @@ const analysisPrompt = `
 You are an analytical extractor that produces the final JSON for the feedback engine. You will be provided these inputs: 
   - "original_content": the original unmodified post (placeholder: {CONTENT}).
   - "moderation": the JSON result produced by the Moderation prompt (placeholder: {MODERATION_RESULT}), which contains:
-      { "safety": "<approved|rejected>", "redactedContent": "<redacted text>" }
+      { "approval": "<approved|rejected>", "redactedContent": "<redacted text>" }
 
 TASK: Using the moderation result and the rules below, return exactly one JSON object (no extra text) with only these keys:
-  1. "keywords" — array of 1 to 3 strings (or [] if moderation.safety == "rejected").
+  1. "keywords" — array of 1 to 3 strings (or [] if moderation.approval == "rejected").
   2. "sentiment" — one of "positive", "neutral", or "negative".
-  3. "safety" — copy the "safety" value from the moderation input (i.e., "approved" or "rejected").
+  3. "approval" — copy the "approval" value from the moderation input (i.e., "approved" or "rejected").
 
 PROCESSING & RULES (follow exactly):
 
 A) PREPROCESSING
-   - Work from the "redactedContent" for keyword extraction. Use "original_content" only to confirm PII/safety if needed.
+   - Work from the "redactedContent" for keyword extraction. Use "original_content" only to confirm PII/approval if needed.
    - Remove or ignore explicit code blocks and markup for keyword extraction (they were replaced by "<CODE_BLOCK>" by moderation).
    - Treat "<PII>" tokens as PII — they must NOT appear in keywords.
 
@@ -118,8 +118,8 @@ B) KEYWORD RULES (exact pipeline)
    4. Selection:
       - Choose 1-3 high-value keywords/phrases that capture actionable topics, bugs, or product areas.
       - Order by importance (most important first).
-      - If moderation.safety == "rejected", set "keywords": [] (empty array) regardless of findings.
-      - If no high-value keywords exist but moderation.safety == "approved", return the single best stemmed keyword.
+      - If moderation.approval == "rejected", set "keywords": [] (empty array) regardless of findings.
+      - If no high-value keywords exist but moderation.approval == "approved", return the single best stemmed keyword.
 
    5. Keyword format constraints:
       - Lowercase, punctuation removed, stemmed, trimmed, single spaces, max two words per keyword.
@@ -133,16 +133,16 @@ C) SENTIMENT RULES
    - Output must be exactly one of: "positive", "neutral", "negative".
 
 D) FINAL OUTPUT
-   - Return exactly one JSON object with only these keys: "keywords", "sentiment", "safety".
-   - If moderation.safety == "rejected", ensure "keywords": [].
+   - Return exactly one JSON object with only these keys: "keywords", "sentiment", "approval".
+   - If moderation.approval == "rejected", ensure "keywords": [].
    - Ensure all keywords comply with the format rules above.
    - Do not include any other text or metadata.
 
 Example (when moderation indicates approved):
-{ "keywords": ["crash", "save"], "sentiment": "negative", "safety": "approved" }
+{ "keywords": ["crash", "save"], "sentiment": "negative", "approval": "approved" }
 
 Example (when moderation indicates rejected):
-{ "keywords": [], "sentiment": "negative", "safety": "rejected" }
+{ "keywords": [], "sentiment": "negative", "approval": "rejected" }
 `;
 
 export const analyzeFeedback = internalAction({
@@ -150,7 +150,7 @@ export const analyzeFeedback = internalAction({
     feedbackId: v.id("feedbacks"),
     originalContent: v.string(),
     moderationResult: v.object({
-      safety: v.union(v.literal("approved"), v.literal("rejected")),
+      approval: v.union(v.literal("approved"), v.literal("rejected")),
       redactedContent: v.string(),
     }),
   },
@@ -178,13 +178,13 @@ export const analyzeFeedback = internalAction({
               type: "STRING",
               enum: ["positive", "neutral", "negative"],
             },
-            safety: {
+            approval: {
               type: "STRING",
               enum: ["approved", "rejected"],
             },
           },
-          required: ["keywords", "sentiment", "safety"],
-          propertyOrdering: ["keywords", "sentiment", "safety"],
+          required: ["keywords", "sentiment", "approval"],
+          propertyOrdering: ["keywords", "sentiment", "approval"],
         },
         thinkingConfig: {
           thinkingBudget: 0,
@@ -196,7 +196,7 @@ export const analyzeFeedback = internalAction({
       interface result {
         keywords: string[];
         sentiment: "positive" | "neutral" | "negative";
-        safety: "approved" | "rejected";
+        approval: "approved" | "rejected";
       }
 
       const result: result = JSON.parse(response.text);
@@ -204,7 +204,7 @@ export const analyzeFeedback = internalAction({
       await ctx.runMutation(internal.feedback.analyzeFeedback, {
         feedbackId: args.feedbackId,
         sentiment: result.sentiment,
-        safety: result.safety,
+        approval: result.approval,
         keywords: result.keywords,
       });
     } else {
@@ -224,10 +224,7 @@ export const embedFeedback = internalAction({
       contents: args.content,
     });
 
-    if (
-      response.embeddings &&
-      response.embeddings.length > 0
-    ) {
+    if (response.embeddings && response.embeddings.length > 0) {
       const values = response.embeddings[0].values;
       if (values) {
         await ctx.runMutation(internal.feedback.embedFeedback, {

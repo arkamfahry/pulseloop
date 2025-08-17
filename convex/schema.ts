@@ -30,8 +30,7 @@ export default defineSchema({
       ),
     ),
     keywords: v.optional(v.array(v.string())),
-    keywordEmbedding: v.optional(v.array(v.number())),
-    safety: v.optional(v.union(v.literal("approved"), v.literal("rejected"))),
+    approval: v.optional(v.union(v.literal("approved"), v.literal("rejected"))),
     user: v.id("users"),
     votes: v.optional(v.number()),
     isPublished: v.boolean(),
@@ -40,12 +39,24 @@ export default defineSchema({
     .index("by_isPublished", ["isPublished"])
     .searchIndex("by_content", {
       searchField: "content",
-      filterFields: ["user", "isPublished", "sentiment", "safety", "keywords"],
+      filterFields: [
+        "user",
+        "isPublished",
+        "sentiment",
+        "approval",
+        "keywords",
+      ],
     })
     .vectorIndex("by_contentEmbedding", {
       vectorField: "contentEmbedding",
       dimensions: 768,
-      filterFields: ["user", "isPublished", "sentiment", "safety", "keywords"],
+      filterFields: [
+        "user",
+        "isPublished",
+        "sentiment",
+        "approval",
+        "keywords",
+      ],
     }),
 
   votes: defineTable({
@@ -55,7 +66,6 @@ export default defineSchema({
 
   keywords: defineTable({
     keyword: v.string(),
-    embedding: v.optional(v.array(v.number())),
     count: v.optional(v.number()),
   }).index("by_keyword", ["keyword"]),
 
