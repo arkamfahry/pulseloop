@@ -15,43 +15,38 @@ export default defineSchema({
     phone: v.optional(v.string()),
     phoneVerificationTime: v.optional(v.number()),
     isAnonymous: v.optional(v.boolean()),
-    role: v.optional(v.union(
-      v.literal("user"),
-      v.literal("admin")
-    )),
-  })
-    .index("email", ["email"]),
+    role: v.optional(v.union(v.literal("user"), v.literal("admin"))),
+  }).index("email", ["email"]),
 
   posts: defineTable({
     content: v.string(),
     contentEmbedding: v.optional(v.array(v.number())),
-    sentiment: v.optional(v.union(
-      v.literal("positive"),
-      v.literal("negative"),
-      v.literal("neutral"),
-    )),
-    keyWords: v.optional(v.array(v.string())),
-    safety: v.optional(v.union(
-      v.literal("safe"),
-      v.literal("unsafe"),
-      v.literal("ambiguous"),
-    )),
+    sentiment: v.optional(
+      v.union(
+        v.literal("positive"),
+        v.literal("negative"),
+        v.literal("neutral"),
+      ),
+    ),
+    keywords: v.optional(v.array(v.string())),
+    keywordEmbedding: v.optional(v.array(v.number())),
+    safety: v.optional(
+      v.union(v.literal("safe"), v.literal("unsafe"), v.literal("ambiguous")),
+    ),
     user: v.id("users"),
     votes: v.optional(v.number()),
-    isPublished: v.boolean()
-  })
-    .index("post_by_user", ["user"]),
+    isPublished: v.boolean(),
+  }).index("post_by_user", ["user"]),
 
   votes: defineTable({
     post: v.id("posts"),
     user: v.id("users"),
-  })
-    .index("vote_by_post_user", ["post", "user"]),
-  
+  }).index("vote_by_post_user", ["post", "user"]),
+
   reports: defineTable({
     name: v.string(),
     content: v.string(),
     posts: v.array(v.id("posts")),
     user: v.id("users"),
-  })
+  }),
 });
