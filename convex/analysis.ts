@@ -116,7 +116,7 @@ Post: "{CONTENT}"
 
 export const AnalyzePost = internalAction({
   args: {
-    postId: v.id("posts"),
+    feedbackId: v.id("feedbacks"),
     content: v.string(),
   },
   handler: async (ctx, args) => {
@@ -165,7 +165,7 @@ export const AnalyzePost = internalAction({
       const result: analysisResult = JSON.parse(analysisResponse.text);
 
       await ctx.runMutation(internal.post.publishPost, {
-        postId: args.postId,
+        feedbackId: args.feedbackId,
         sentiment: result.sentiment,
         safety: result.safety,
         keywords: result.keywords,
@@ -178,7 +178,7 @@ export const AnalyzePost = internalAction({
 
 export const EmbedPost = internalAction({
   args: {
-    postId: v.id("posts"),
+    feedbackId: v.id("feedbacks"),
     content: v.string(),
   },
   handler: async (ctx, args) => {
@@ -194,7 +194,7 @@ export const EmbedPost = internalAction({
       const embeddingValues = embeddingResponse.embeddings[0].values;
       if (embeddingValues) {
         await ctx.runMutation(internal.post.embedPost, {
-          postId: args.postId,
+          feedbackId: args.feedbackId,
           embedding: embeddingValues,
         });
       } else {

@@ -13,19 +13,19 @@ export const createPost = mutation({
       throw new Error("User not authenticated");
     }
 
-    const postId = await ctx.db.insert("posts", {
+    const feedbackId = await ctx.db.insert("feedbacks", {
       content: args.content,
       user: userId,
       isPublished: false,
     });
 
     await ctx.scheduler.runAfter(0, internal.analysis.AnalyzePost, {
-      postId: postId,
+      feedbackId: feedbackId,
       content: args.content,
     });
 
     await ctx.scheduler.runAfter(0, internal.analysis.EmbedPost, {
-      postId: postId,
+      feedbackId: feedbackId,
       content: args.content,
     });
   },
@@ -33,7 +33,7 @@ export const createPost = mutation({
 
 export const publishPost = internalMutation({
   args: {
-    postId: v.id("posts"),
+    feedbackId: v.id("feedbacks"),
     sentiment: v.union(
       v.literal("positive"),
       v.literal("neutral"),
@@ -48,14 +48,14 @@ export const publishPost = internalMutation({
   },
   handler: async (ctx, args) => {
     if (args.safety === "safe") {
-      await ctx.db.patch(args.postId, {
+      await ctx.db.patch(args.feedbackId, {
         sentiment: args.sentiment,
         safety: args.safety,
         keywords: args.keywords,
         isPublished: true,
       });
     } else {
-      await ctx.db.patch(args.postId, {
+      await ctx.db.patch(args.feedbackId, {
         sentiment: args.sentiment,
         safety: args.safety,
         keywords: args.keywords,
@@ -67,11 +67,11 @@ export const publishPost = internalMutation({
 
 export const embedPost = internalMutation({
   args: {
-    postId: v.id("posts"),
+    feedbackId: v.id("feedbacks"),
     embedding: v.array(v.number()),
   },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.postId, {
+    await ctx.db.patch(args.feedbackId, {
       contentEmbedding: args.embedding,
     });
   },
@@ -79,7 +79,7 @@ export const embedPost = internalMutation({
 
 export const upvotePost = mutation({
   args: {
-    postId: v.id("posts"),
+    feedbackId: v.id("feedbacks"),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -89,8 +89,8 @@ export const upvotePost = mutation({
 
     const existingVote = await ctx.db
       .query("votes")
-      .withIndex("by_post_user", (q) =>
-        q.eq("post", args.postId).eq("user", userId),
+      .withIndex("by_feedback_user", (q) =>
+        q.eq("feedback", args.feedbackId).eq("user", userId),
       )
       .first();
     if (existingVote) {
@@ -98,13 +98,13 @@ export const upvotePost = mutation({
     }
 
     await ctx.db.insert("votes", {
-      post: args.postId,
+      feedback: args.feedbackId,
       user: userId,
     });
 
-    const post = await ctx.db.get(args.postId);
+    const post = await ctx.db.get(args.feedbackId);
     if (post) {
-      await ctx.db.patch(args.postId, {
+      await ctx.db.patch(args.feedbackId, {
         votes: (post.votes ?? 0) + 1,
       });
     }
@@ -112,9 +112,9 @@ export const upvotePost = mutation({
 });
 
 export const getPost = query({
-  args: { postId: v.id("posts") },
+  args: { feedbackId: v.id("feedbacks") },
   handler: async (ctx, args) => {
-    const post = await ctx.db.get(args.postId);
+    const post = await ctx.db.get(args.feedbackId);
     return post;
   },
 });
@@ -122,7 +122,7 @@ export const getPost = query({
 export const listPosts = query({
   handler: async (ctx) => {
     return await ctx.db
-      .query("posts")
+      .query("feedbacks")
       .filter((q) => q.eq(q.field("isPublished"), true))
       .collect();
   },

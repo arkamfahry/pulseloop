@@ -18,7 +18,7 @@ export default defineSchema({
     role: v.optional(v.union(v.literal("user"), v.literal("admin"))),
   }).index("email", ["email"]),
 
-  posts: defineTable({
+  feedbacks: defineTable({
     content: v.string(),
     contentEmbedding: v.optional(v.array(v.number())),
     sentiment: v.optional(
@@ -50,7 +50,12 @@ export default defineSchema({
     }),
 
   votes: defineTable({
-    post: v.id("posts"),
+    feedback: v.id("feedbacks"),
     user: v.id("users"),
-  }).index("by_post_user", ["post", "user"]),
+  }).index("by_feedback_user", ["feedback", "user"]),
+
+  keywords: defineTable({
+    keyword: v.string(),
+    embedding: v.optional(v.array(v.number())),
+  }).index("by_keyword", ["keyword"]),
 });
