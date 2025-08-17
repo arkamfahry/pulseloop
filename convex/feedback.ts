@@ -103,7 +103,7 @@ export const embedFeedback = internalMutation({
   },
 });
 
-export const upvoteFeedback = mutation({
+export const voteFeedback = mutation({
   args: {
     feedbackId: v.id("feedbacks"),
   },
@@ -113,31 +113,39 @@ export const upvoteFeedback = mutation({
       throw new Error("User not authenticated");
     }
 
-    const existingVote = await ctx.db
+    const existing = await ctx.db
       .query("votes")
       .withIndex("by_feedback_user", (q) =>
         q.eq("feedback", args.feedbackId).eq("user", userId),
       )
       .first();
-    if (existingVote) {
-      return;
-    }
-
-    await ctx.db.insert("votes", {
-      feedback: args.feedbackId,
-      user: userId,
-    });
 
     const post = await ctx.db.get(args.feedbackId);
-    if (post) {
+
+    if (!post) {
+      throw new Error("Feedback not found");
+    }
+
+    if (!existing) {
+      await ctx.db.insert("votes", {
+        feedback: args.feedbackId,
+        user: userId,
+      });
+
       await ctx.db.patch(args.feedbackId, {
         votes: (post.votes ?? 0) + 1,
+      });
+    } else {
+      await ctx.db.delete(existing._id);
+
+      await ctx.db.patch(args.feedbackId, {
+        votes: Math.max((post.votes ?? 0) - 1, 0),
       });
     }
   },
 });
 
-export const getPost = query({
+export const getFeedback = query({
   args: { feedbackId: v.id("feedbacks") },
   handler: async (ctx, args) => {
     const post = await ctx.db.get(args.feedbackId);
@@ -145,7 +153,7 @@ export const getPost = query({
   },
 });
 
-export const listPosts = query({
+export const listFeedback = query({
   handler: async (ctx) => {
     return await ctx.db
       .query("feedbacks")
