@@ -36,17 +36,21 @@ export default defineSchema({
     user: v.id("users"),
     votes: v.optional(v.number()),
     isPublished: v.boolean(),
-  }).index("post_by_user", ["user"]),
+  })
+    .index("by_user", ["user"])
+    .index("by_isPublished", ["isPublished"])
+    .searchIndex("by_content", {
+      searchField: "content",
+      filterFields: ["user", "isPublished", "sentiment", "safety", "keywords"],
+    })
+    .vectorIndex("by_contentEmbedding", {
+      vectorField: "contentEmbedding",
+      dimensions: 768,
+      filterFields: ["user", "isPublished", "sentiment", "safety", "keywords"],
+    }),
 
   votes: defineTable({
     post: v.id("posts"),
     user: v.id("users"),
-  }).index("vote_by_post_user", ["post", "user"]),
-
-  reports: defineTable({
-    name: v.string(),
-    content: v.string(),
-    posts: v.array(v.id("posts")),
-    user: v.id("users"),
-  }),
+  }).index("by_post_user", ["post", "user"]),
 });
