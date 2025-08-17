@@ -5,122 +5,159 @@ import { internal } from "./_generated/api";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-const promptTemplate = `
-You are a highly analytical AI assistant for a real-time feedback engine. Follow these rules *exactly*.
+const moderatePrompt = `
+You are a safety moderator for a real-time feedback pipeline. Input: a single string named "post" (placeholder: {CONTENT}). Follow these rules EXACTLY and return exactly one JSON object (no extra text):
 
---- OUTPUT FORMAT (MANDATORY) ---
-Return exactly one JSON object (no extra text, no prose). The JSON must contain only these three keys:
-1. "keywords" — array of exactly 1 to 3 strings (unless safety rule forces rejection; see SAFETY_RULES). Each string must be normalized and stemmed as specified below.
-2. "sentiment" — one of "positive", "neutral", or "negative".
-3. "safety" — one of "safe" or "unsafe".
+1) PREPROCESSING FOR SAFETY
+   - Replace any URLs, emails, phone numbers, and exact addresses with the token "<PII>".
+   - Keep the original un-redacted post internally for analysis of whether it contains PII; but the output should include only the redacted text.
+   - Remove/ignore explicit code blocks or quoted logs for the purpose of PII redaction (they must still be scanned for abusive/PII content).
 
-If the post is flagged as unsafe per SAFETY_RULES, "keywords" must be an empty array ("[]"). Do not include any additional keys or metadata.
+2) APPLY SAFETY RULES (mark "rejected" if **any** of the following are present):
+   A. Non-constructive rant/low-effort vent or empty/only-PII (e.g., "Ughhh this app sucks!!" with no actionable detail).
+   B. Hate, targeted harassment, or demeaning content toward protected classes or individuals.
+   C. Profanity/obscene sexual language used abusively (not constructive).
+   D. Threats of violence or calls for harm.
+   E. Coded hostile language / dog whistles / stereotypes implying hostility.
+   F. Personal Identifiable Information (emails, phone numbers, home addresses, national IDs, or full names intended to identify a private person) — treat as rejected.
+   G. Sarcasm/passive-aggressive remarks that demean a person or group.
+   H. Ambiguously mocking or condescending content reasonably interpretable as harmful.
 
---- PREPROCESSING ---
-1. Language detection:
-   - If the post is not in English, translate it to English for analysis (preserve original text for PII detection), then perform all downstream steps on the English translation.
-2. Remove or ignore any explicit code blocks, markup (HTML/MD), or quoted system logs for keyword extraction. However, still analyze them for safety if they contain abusive or PII content.
-3. Replace URLs, emails, phone numbers, and exact addresses with the token "<PII>" for safety checking and then treat as PII (see SAFETY_RULES).
+   If none of the above apply, mark "approved".
 
---- KEYWORD RULES (exact processing pipeline) ---
-A. Tokenization & normalization:
-   1. Lowercase everything.
-   2. Strip all punctuation except internal apostrophes inside words (e.g., "don't" -> "dont" after stemming rules below).
-   3. Collapse multiple whitespace into single space.
-   4. Remove leading/trailing whitespace.
-B. Remove stop/generic words BEFORE selecting keywords:
-   - Do not use overly generic tokens such as: "good", "bad", "nice", "great", "love", "use", "because", "from", "app", "feature", "thing", "stuff", "issue", "problem" (these are forbidden as keywords).
-C. Stemming:
-   - Apply a standard Porter-style stemmer (or equivalent) to reduce words to their root form (e.g., running/ran/runs -> run; crashing/crashed/crashes -> crash).
-   - For multi-word concepts that are meaningful together (e.g., "battery life", "login error"), prefer a short phrase (2 words) as a single keyword if it conveys more value than single-word stems. Normalize phrase by stemming each token and joining with a single space, e.g., "batteri life" -> "batteri life" (after stemming should be "batteri life" or "batteri lif" depending on algorithm).
-D. Keyword selection:
-   1. Select 1-3 **high-value** keywords/phrases that best capture actionable topics, bugs, or product areas in the post.
-   2. Order by importance (most important first).
-   3. If more than three candidate keywords are equally important, pick the top 3 by frequency and specificity (prefer domain nouns and verbs over adjectives and adverbs).
-   4. If no high-value keywords exist (e.g., post is a rant or empty/only PII), return an empty array **only** if SAFETY_RULES require "unsafe". Otherwise return the single best stemmed keyword.
-E. Keyword format:
-   - Lowercase, punctuation removed, stemmed, trimmed, single spaces between tokens, no more than two words per keyword (prefer one), e.g. "login fail", "crash", "battery drain".
+3) OUTPUT FORMAT
+   - Return exactly one JSON object with only these two keys:
+     { "safety": "<approved|rejected>", "redactedContent": "<the post with PII replaced by <PII> and code blocks removed/ignored for keyword purposes>" }
+   - "redactedContent" must preserve the text structure but with PII replaced by "<PII>" and any removed code blocks replaced by the token "<CODE_BLOCK>".
+   - Do not include any other keys, commentary, or explanation.
 
---- SENTIMENT RULES ---
-1. Consider explicit language, implied meaning, emotional tone, punctuation, emojis, and context.
-2. Sarcasm/irony/backhanded compliments:
-   - If sarcasm or irony is detected (contradiction between literal positive words and context that implies criticism), classify as **negative**.
-3. Mixed sentiment:
-   - If the post contains both praise and criticism, choose the **predominant** overall intent. If equal weight and one of the two is negative or mocking, prefer **negative**.
-4. Rules of thumb:
-   - Positive: explicit praise, thanks, excitement, constructive suggestions framed positively.
-   - Neutral: factual statements, feature requests without affect, bug reports stated calmly without emotion.
-   - Negative: complaints, insults, strong dissatisfaction, threats, profanity directed at product/people, sarcasm, passive-aggressive or backhanded praise followed by criticism.
-5. Emoji guidance:
-   - Map common emojis to sentiment signals (e.g., 👍, 🙂 -> positive; 😡, 👎 -> negative; 😐 -> neutral). Emojis do not override clear textual sentiment but help disambiguate short texts.
-6. Output must be one of "positive", "neutral", or "negative".
-
---- SAFETY RULES (must be enforced BEFORE keywords are returned) ---
-Mark **"unsafe"** and set "keywords: []" if any of the following apply:
-A. Non-constructive content:
-   - The post is a rant, low-effort vent, or contains no actionable feedback (e.g., "Ughhh this app sucks!!" with no details).
-B. Hate, harassment, threats:
-   - Any targeted hate speech, demeaning content toward protected classes, or personal attacks (explicit or subtle).
-C. Profanity / obscene language:
-   - Posts containing profanity, sexual explicitness used abusively, or obscene content that is not constructive.
-D. Threats of violence or calls for harm.
-E. Coded hostile language, dog whistles, or stereotypes implying hostility.
-F. Personal Identifiable Information (PII):
-   - Posts that contain personal emails, phone numbers, home addresses, national ID numbers, or user full names intended to identify a private person (unless anonymized); treat as unsafe.
-G. Sarcasm/passive-aggressive remarks that demean or belittle a person or group (even if superficially phrased as praise).
-H. Ambiguously mocking or condescending content that could reasonably be interpreted as harmful.
-If none of the above apply, mark **"safe"**.
-
---- ADDITIONAL TECHNICAL RULES & EDGE CASES ---
-1. Short posts (<=5 tokens): use emojis and punctuation as tie-breakers. If ambiguous and contains only a positive emoji, mark positive; if only a negative emoji, mark negative; if ambiguous, mark neutral.
-2. Repeated emphasis (e.g., "soooo bad!!!") amplifies negative sentiment — treat as stronger negative.
-3. Numbers: treat numeric error codes (e.g., "500", "404") as part of a keyword if adjacent to a technical term (e.g., "error 500" -> keyword "error 500" after normalization).
-4. Multi-language posts: translate to English for processing, but if translation is unreliable and meaning is unclear, default to "neutral" unless unsafe content is detected.
-5. Emoji-only or punctuation-only posts: interpret emoji sentiment; if only punctuation (e.g., "!!!"), classify as "neutral" unless clearly attached to a complaint elsewhere.
-6. If the post includes steps-to-reproduce or logs: extract the actionable root cause/feature area as keyword (e.g., "app crash on save" -> "crash", "save").
-7. Do not extract or include any PII in keywords. If the only meaningful tokens are PII, mark unsafe and "keywords: []".
-
---- GENERIC TERM BLACKLIST (do not use these as keywords) ---
-good, bad, nice, great, love, use, because, from, thing, stuff, help, thanks, thank, issue, problem, app, product, feature, user
-
---- EXAMPLES (input -> expected JSON) ---
-1) Post: "The app keeps crashing when I try to save a file. Please fix!"
-   -> { "keywords": ["crash", "save"], "sentiment": "negative", "safety": "safe" }
-
-2) Post: "Love the redesign — cleaner and faster."
-   -> { "keywords": ["redesign"], "sentiment": "positive", "safety": "safe" }
-
-3) Post: "Ughhh this is garbage!!!"
-   -> { "keywords": [], "sentiment": "negative", "safety": "unsafe" }  // rant, non-actionable -> unsafe
-
-4) Post: "Login 500 error keeps happening for new users."
-   -> { "keywords": ["login", "error 500"], "sentiment": "negative", "safety": "safe" }
-
-5) Post: "Nice job, but the battery drains so fast it's unusable :/ "
-   -> { "keywords": ["battery drain"], "sentiment": "negative", "safety": "safe" } // backhanded compliment -> negative
-
-6) Post: "Contact me at john@example.com — I can help."
-   -> { "keywords": [], "sentiment": "neutral", "safety": "unsafe" } // PII → unsafe
-
---- VALIDATION CHECKLIST (before returning JSON) ---
-- JSON only, no extra text.
-- "keywords" length == 1..3 except when "safety" == "unsafe" then keywords == [].
-- All keywords are lowercased, stemmed, no punctuation, max two words.
-- "sentiment" is one of the three allowed values.
-- "safety" is "safe" or "unsafe".
-
-If you cannot confidently determine sentiment or keywords due to ambiguity but the post is not unsafe, make a best-effort decision per rules above (prefer neutral over guessing positive). Do not ask follow-up questions or return partial analysis — produce the JSON result now.
-
-Post: "{CONTENT}"
+Example output:
+{ "safety": "rejected", "redactedContent": "Contact me at <PII> — I can help." }
 `;
 
-export const AnalyzePost = internalAction({
+export const moderateFeedback = internalAction({
   args: {
     feedbackId: v.id("feedbacks"),
     content: v.string(),
   },
   handler: async (ctx, args) => {
-    const prompt = promptTemplate.replace("{CONTENT}", args.content);
+    const prompt = moderatePrompt.replace("{CONTENT}", args.content);
+    const analysisResponse = await ai.models.generateContent({
+      model: "gemini-2.5-flash-lite",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "OBJECT",
+          properties: {
+            safety: {
+              type: "STRING",
+              enum: ["approved", "rejected"],
+            },
+            redactedContent: {
+              type: "STRING",
+            },
+          },
+          required: ["safety", "redactedContent"],
+          propertyOrdering: ["safety", "redactedContent"],
+        },
+        thinkingConfig: {
+          thinkingBudget: 0,
+        },
+      },
+    });
+
+    if (analysisResponse.text) {
+      interface analysisResult {
+        safety: "approved" | "rejected";
+        redactedContent: string;
+      }
+
+      const result: analysisResult = JSON.parse(analysisResponse.text);
+
+      await ctx.runMutation(internal.feedback.moderateFeedback, {
+        feedbackId: args.feedbackId,
+        safety: result.safety,
+        redactedContent: result.redactedContent,
+      });
+    } else {
+      console.error("Moderation failed");
+    }
+  },
+});
+
+const analysisPrompt = `
+You are an analytical extractor that produces the final JSON for the feedback engine. You will be provided these inputs: 
+  - "original_content": the original unmodified post (placeholder: {CONTENT}).
+  - "moderation": the JSON result produced by the Moderation prompt (placeholder: {MODERATION_RESULT}), which contains:
+      { "safety": "<approved|rejected>", "redactedContent": "<redacted text>" }
+
+TASK: Using the moderation result and the rules below, return exactly one JSON object (no extra text) with only these keys:
+  1. "keywords" — array of 1 to 3 strings (or [] if moderation.safety == "rejected").
+  2. "sentiment" — one of "positive", "neutral", or "negative".
+  3. "safety" — copy the "safety" value from the moderation input (i.e., "approved" or "rejected").
+
+PROCESSING & RULES (follow exactly):
+
+A) PREPROCESSING
+   - Work from the "redactedContent" for keyword extraction. Use "original_content" only to confirm PII/safety if needed.
+   - Remove or ignore explicit code blocks and markup for keyword extraction (they were replaced by "<CODE_BLOCK>" by moderation).
+   - Treat "<PII>" tokens as PII — they must NOT appear in keywords.
+
+B) KEYWORD RULES (exact pipeline)
+   1. Tokenization & normalization:
+      - Lowercase everything.
+      - Strip all punctuation except internal apostrophes inside words.
+      - Collapse multiple whitespace into single space.
+      - Trim leading/trailing whitespace.
+   2. Remove stop/generic words BEFORE selecting keywords. The following words are forbidden as keywords:
+      good, bad, nice, great, love, use, because, from, thing, stuff, help, thanks, thank, issue, problem, app, product, feature, user
+   3. Stemming:
+      - Apply a Porter-style stemmer to tokens.
+      - For meaningful multi-word concepts prefer a 2-word phrase (max) if it adds value (stem each token and join with single space).
+   4. Selection:
+      - Choose 1-3 high-value keywords/phrases that capture actionable topics, bugs, or product areas.
+      - Order by importance (most important first).
+      - If moderation.safety == "rejected", set "keywords": [] (empty array) regardless of findings.
+      - If no high-value keywords exist but moderation.safety == "approved", return the single best stemmed keyword.
+
+   5. Keyword format constraints:
+      - Lowercase, punctuation removed, stemmed, trimmed, single spaces, max two words per keyword.
+
+C) SENTIMENT RULES
+   - Determine overall sentiment from content, emojis, punctuation, and tone.
+   - Sarcasm/irony that implies criticism => "negative".
+   - If mixed, pick predominant; if tie and one is negative/mocking, prefer "negative".
+   - Short posts (<=5 tokens): use emojis/punctuation as tie-breakers; ambiguous => "neutral".
+   - Emoji mapping: 👍🙂 => positive, 😡👎 => negative, 😐 => neutral.
+   - Output must be exactly one of: "positive", "neutral", "negative".
+
+D) FINAL OUTPUT
+   - Return exactly one JSON object with only these keys: "keywords", "sentiment", "safety".
+   - If moderation.safety == "rejected", ensure "keywords": [].
+   - Ensure all keywords comply with the format rules above.
+   - Do not include any other text or metadata.
+
+Example (when moderation indicates approved):
+{ "keywords": ["crash", "save"], "sentiment": "negative", "safety": "approved" }
+
+Example (when moderation indicates rejected):
+{ "keywords": [], "sentiment": "negative", "safety": "rejected" }
+`;
+
+export const analyzeFeedback = internalAction({
+  args: {
+    feedbackId: v.id("feedbacks"),
+    originalContent: v.string(),
+    moderationResult: v.object({
+      safety: v.string(),
+      redactedContent: v.string(),
+    }),
+  },
+  handler: async (ctx, args) => {
+    const prompt = analysisPrompt
+      .replace("{CONTENT}", args.originalContent)
+      .replace("{MODERATION_RESULT}", JSON.stringify(args.moderationResult));
     const analysisResponse = await ai.models.generateContent({
       model: "gemini-2.5-flash-lite",
       contents: prompt,
@@ -143,7 +180,7 @@ export const AnalyzePost = internalAction({
             },
             safety: {
               type: "STRING",
-              enum: ["safe", "unsafe"],
+              enum: ["approved", "rejected"],
             },
           },
           required: ["keywords", "sentiment", "safety"],
@@ -159,12 +196,12 @@ export const AnalyzePost = internalAction({
       interface analysisResult {
         keywords: string[];
         sentiment: "positive" | "neutral" | "negative";
-        safety: "safe" | "unsafe";
+        safety: "approved" | "rejected";
       }
 
       const result: analysisResult = JSON.parse(analysisResponse.text);
 
-      await ctx.runMutation(internal.feedback.publishFeedback, {
+      await ctx.runMutation(internal.feedback.analyzeFeedback, {
         feedbackId: args.feedbackId,
         sentiment: result.sentiment,
         safety: result.safety,
@@ -176,7 +213,7 @@ export const AnalyzePost = internalAction({
   },
 });
 
-export const EmbedPost = internalAction({
+export const embedFeedback = internalAction({
   args: {
     feedbackId: v.id("feedbacks"),
     content: v.string(),

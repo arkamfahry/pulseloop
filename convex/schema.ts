@@ -20,6 +20,7 @@ export default defineSchema({
 
   feedbacks: defineTable({
     content: v.string(),
+    redactedContent: v.optional(v.string()),
     contentEmbedding: v.optional(v.array(v.number())),
     sentiment: v.optional(
       v.union(
@@ -30,9 +31,7 @@ export default defineSchema({
     ),
     keywords: v.optional(v.array(v.string())),
     keywordEmbedding: v.optional(v.array(v.number())),
-    safety: v.optional(
-      v.union(v.literal("safe"), v.literal("unsafe"), v.literal("ambiguous")),
-    ),
+    safety: v.optional(v.union(v.literal("approved"), v.literal("rejected"))),
     user: v.id("users"),
     votes: v.optional(v.number()),
     isPublished: v.boolean(),
@@ -57,5 +56,11 @@ export default defineSchema({
   keywords: defineTable({
     keyword: v.string(),
     embedding: v.optional(v.array(v.number())),
+    count: v.optional(v.number()),
   }).index("by_keyword", ["keyword"]),
+
+  feedbackKeywords: defineTable({
+    feedback: v.id("feedbacks"),
+    keyword: v.id("keywords"),
+  }).index("by_feedback_keyword", ["feedback", "keyword"]),
 });

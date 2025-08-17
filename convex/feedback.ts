@@ -19,49 +19,76 @@ export const createFeedback = mutation({
       isPublished: false,
     });
 
-    await ctx.scheduler.runAfter(0, internal.analysis.AnalyzePost, {
-      feedbackId: feedbackId,
-      content: args.content,
-    });
-
-    await ctx.scheduler.runAfter(0, internal.analysis.EmbedPost, {
+    await ctx.scheduler.runAfter(0, internal.analysis.moderateFeedback, {
       feedbackId: feedbackId,
       content: args.content,
     });
   },
 });
 
-export const publishFeedback = internalMutation({
+export const moderateFeedback = internalMutation({
+  args: {
+    feedbackId: v.id("feedbacks"),
+    safety: v.union(v.literal("approved"), v.literal("rejected")),
+    redactedContent: v.string(),
+  },
+  handler: async (ctx, args) => {
+    if (args.safety === "approved") {
+      await ctx.db.patch(args.feedbackId, {
+        safety: args.safety,
+        redactedContent: args.redactedContent,
+      });
+
+      const feedback = await ctx.db.get(args.feedbackId);
+      if (!feedback) {
+        throw new Error("Feedback not found");
+      }
+
+      await ctx.scheduler.runAfter(0, internal.analysis.analyzeFeedback, {
+        feedbackId: feedback._id,
+        originalContent: feedback.content,
+        moderationResult: {
+          safety: feedback.safety || "approved",
+          redactedContent: feedback.redactedContent || "",
+        },
+      });
+    } else {
+      await ctx.db.patch(args.feedbackId, {
+        safety: args.safety,
+        redactedContent: args.redactedContent,
+      });
+    }
+  },
+});
+
+export const analyzeFeedback = internalMutation({
   args: {
     feedbackId: v.id("feedbacks"),
     sentiment: v.union(
       v.literal("positive"),
-      v.literal("neutral"),
       v.literal("negative"),
+      v.literal("neutral"),
     ),
-    safety: v.union(
-      v.literal("safe"),
-      v.literal("unsafe"),
-      v.literal("ambiguous"),
-    ),
+    safety: v.union(v.literal("approved"), v.literal("rejected")),
     keywords: v.array(v.string()),
   },
   handler: async (ctx, args) => {
-    if (args.safety === "safe") {
-      await ctx.db.patch(args.feedbackId, {
-        sentiment: args.sentiment,
-        safety: args.safety,
-        keywords: args.keywords,
-        isPublished: true,
-      });
-    } else {
-      await ctx.db.patch(args.feedbackId, {
-        sentiment: args.sentiment,
-        safety: args.safety,
-        keywords: args.keywords,
-        isPublished: false,
-      });
+    await ctx.db.patch(args.feedbackId, {
+      sentiment: args.sentiment,
+      keywords: args.keywords,
+      safety: args.safety,
+      isPublished: true,
+    });
+
+    const feedback = await ctx.db.get(args.feedbackId);
+    if (!feedback) {
+      throw new Error("Feedback not found");
     }
+
+    await ctx.scheduler.runAfter(0, internal.analysis.embedFeedback, {
+      feedbackId: feedback._id,
+      content: feedback.content,
+    });
   },
 });
 
