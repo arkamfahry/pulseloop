@@ -3,7 +3,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
-export const createPost = mutation({
+export const createFeedback = mutation({
   args: {
     content: v.string(),
   },
@@ -31,7 +31,7 @@ export const createPost = mutation({
   },
 });
 
-export const publishPost = internalMutation({
+export const publishFeedback = internalMutation({
   args: {
     feedbackId: v.id("feedbacks"),
     sentiment: v.union(
@@ -65,7 +65,7 @@ export const publishPost = internalMutation({
   },
 });
 
-export const embedPost = internalMutation({
+export const embedFeedback = internalMutation({
   args: {
     feedbackId: v.id("feedbacks"),
     embedding: v.array(v.number()),

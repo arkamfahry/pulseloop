@@ -164,7 +164,7 @@ export const AnalyzePost = internalAction({
 
       const result: analysisResult = JSON.parse(analysisResponse.text);
 
-      await ctx.runMutation(internal.post.publishPost, {
+      await ctx.runMutation(internal.feedback.publishFeedback, {
         feedbackId: args.feedbackId,
         sentiment: result.sentiment,
         safety: result.safety,
@@ -193,7 +193,7 @@ export const EmbedPost = internalAction({
     ) {
       const embeddingValues = embeddingResponse.embeddings[0].values;
       if (embeddingValues) {
-        await ctx.runMutation(internal.post.embedPost, {
+        await ctx.runMutation(internal.feedback.embedFeedback, {
           feedbackId: args.feedbackId,
           embedding: embeddingValues,
         });

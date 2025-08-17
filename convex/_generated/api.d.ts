@@ -16,8 +16,8 @@ import type {
 import type * as CustomProfile from "../CustomProfile.js";
 import type * as analysis from "../analysis.js";
 import type * as auth from "../auth.js";
+import type * as feedback from "../feedback.js";
 import type * as http from "../http.js";
-import type * as post from "../post.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -31,8 +31,8 @@ declare const fullApi: ApiFromModules<{
   CustomProfile: typeof CustomProfile;
   analysis: typeof analysis;
   auth: typeof auth;
+  feedback: typeof feedback;
   http: typeof http;
-  post: typeof post;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,
