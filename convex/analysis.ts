@@ -60,6 +60,7 @@ export const moderateFeedback = internalAction({
         thinkingConfig: {
           thinkingBudget: 0,
         },
+        temperature: 0.0,
       },
     });
 
@@ -156,6 +157,7 @@ export const analyzeFeedback = internalAction({
         thinkingConfig: {
           thinkingBudget: 0,
         },
+        temperature: 0.0,
       },
     });
 
