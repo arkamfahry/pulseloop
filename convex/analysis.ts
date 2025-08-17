@@ -5,7 +5,7 @@ import { internal } from "./_generated/api";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-const moderatePrompt = `
+const moderationPrompt = `
 You are a safety moderator for a real-time feedback pipeline. Input: a single string named "post" (placeholder: {CONTENT}). Follow these rules EXACTLY and return exactly one JSON object (no extra text):
 
 1) PREPROCESSING FOR SAFETY
@@ -41,8 +41,8 @@ export const moderateFeedback = internalAction({
     content: v.string(),
   },
   handler: async (ctx, args) => {
-    const prompt = moderatePrompt.replace("{CONTENT}", args.content);
-    const analysisResponse = await ai.models.generateContent({
+    const prompt = moderationPrompt.replace("{CONTENT}", args.content);
+    const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-lite",
       contents: prompt,
       config: {
@@ -67,13 +67,13 @@ export const moderateFeedback = internalAction({
       },
     });
 
-    if (analysisResponse.text) {
-      interface analysisResult {
+    if (response.text) {
+      interface result {
         safety: "approved" | "rejected";
         redactedContent: string;
       }
 
-      const result: analysisResult = JSON.parse(analysisResponse.text);
+      const result: result = JSON.parse(response.text);
 
       await ctx.runMutation(internal.feedback.moderateFeedback, {
         feedbackId: args.feedbackId,
@@ -158,7 +158,7 @@ export const analyzeFeedback = internalAction({
     const prompt = analysisPrompt
       .replace("{CONTENT}", args.originalContent)
       .replace("{MODERATION_RESULT}", JSON.stringify(args.moderationResult));
-    const analysisResponse = await ai.models.generateContent({
+    const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-lite",
       contents: prompt,
       config: {
@@ -192,14 +192,14 @@ export const analyzeFeedback = internalAction({
       },
     });
 
-    if (analysisResponse.text) {
-      interface analysisResult {
+    if (response.text) {
+      interface result {
         keywords: string[];
         sentiment: "positive" | "neutral" | "negative";
         safety: "approved" | "rejected";
       }
 
-      const result: analysisResult = JSON.parse(analysisResponse.text);
+      const result: result = JSON.parse(response.text);
 
       await ctx.runMutation(internal.feedback.analyzeFeedback, {
         feedbackId: args.feedbackId,
