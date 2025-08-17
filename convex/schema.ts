@@ -65,7 +65,20 @@ export default defineSchema({
   keywords: defineTable({
     keyword: v.string(),
     count: v.optional(v.number()),
+    sentiment: v.object({
+      positive: v.optional(v.number()),
+      negative: v.optional(v.number()),
+      neutral: v.optional(v.number()),
+    }),
   }).index("by_keyword", ["keyword"]),
+
+  keywordEmbeddings: defineTable({
+    embedding: v.optional(v.array(v.number())),
+    keyword: v.id("keywords"),
+  }).vectorIndex("by_embedding", {
+    vectorField: "embedding",
+    dimensions: 768,
+  }),
 
   feedbackKeywords: defineTable({
     feedback: v.id("feedbacks"),
