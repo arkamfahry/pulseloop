@@ -96,6 +96,7 @@ export const embedFeedback = internalMutation({
 
     await ctx.db.insert("feedbackEmbeddings", {
       feedback: feedback._id,
+      user: feedback.user,
       embedding: args.embedding,
       sentiment: feedback.sentiment,
       keywords: feedback.keywords,

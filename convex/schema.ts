@@ -51,10 +51,11 @@ export default defineSchema({
     ),
     keywords: v.optional(v.array(v.string())),
     feedback: v.id("feedbacks"),
+    user: v.id("users"),
   }).vectorIndex("by_embedding", {
     vectorField: "embedding",
     dimensions: 768,
-    filterFields: ["sentiment", "keywords"],
+    filterFields: ["sentiment", "keywords", "user"],
   }),
 
   votes: defineTable({

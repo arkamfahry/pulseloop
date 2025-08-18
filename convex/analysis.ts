@@ -131,7 +131,7 @@ export const analyzeFeedback = internalAction({
   handler: async (ctx, args) => {
     const prompt = analysisPrompt.replace("{CONTENT}", args.content);
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-flash-lite",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
