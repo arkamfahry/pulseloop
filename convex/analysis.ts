@@ -82,30 +82,27 @@ export const moderateFeedback = internalAction({
 });
 
 const analysisPrompt = `
-You are an analytical extractor that produces the final JSON for the feedback engine. Input:
+You are an analytical extractor that categorizes content for a feedback engine. Input:
 - "content": the post text ({CONTENT})
 
 Return exactly one JSON object with keys:
-{ "keywords": [...], "sentiment": "..." }
+{ "topics": [...], "sentiment": "..." }
 
 PROCESS:
 
 A) PREPROCESSING
-- Use "content" for extraction.
-- Ignore code blocks (<CODE_BLOCK>) and treat <PII> as PII (do not include in keywords).
+- Use "content" for categorization.
+- Ignore code blocks (<CODE_BLOCK>) and treat <PII> as PII (do not include in topics).
 - Lowercase, remove punctuation except internal apostrophes, collapse spaces, trim whitespace.
 - Correct consistent spelling errors if present.
 
-B) KEYWORD EXTRACTION
-- Remove stop/generic words: good, bad, nice, great, love, use, because, from, thing, stuff, help, thanks, thank, issue, problem, app, product, feature, user.
-- Lemmatize tokens.
-- Combine adjacent high-value tokens into meaningful 2-word phrases:
-    - Adjective + noun (e.g., "slow wifi")
-    - Noun + noun (e.g., "uni work")
-- Maximum 2 words per keyword; join with single space.
-- Select 1-3 high-value keywords/phrases, ordered by importance.
-- If no high-value keywords exist, return single best lemmatized keyword.
-- Keywords: lowercase, punctuation removed, trimmed, max 2 words.
+B) TOPIC CATEGORIZATION
+- Identify the main subject(s) or theme(s) of the content.
+- Remove generic words and stopwords that do not convey a topic (e.g., good, bad, nice, great, love, use, because, from, thing, stuff, help, thanks, thank, issue, problem, app, product, feature, user).
+- Combine adjacent words into meaningful topic phrases (maximum 2 words).
+- Select 1-3 high-value topics, ordered by importance.
+- If no clear topic exists, return a single best keyword representing the topic.
+- Topics: lowercase, punctuation removed, trimmed, max 2 words.
 
 C) SENTIMENT
 - Determine "positive", "neutral", or "negative".
@@ -115,12 +112,12 @@ C) SENTIMENT
 - If mixed, pick predominant; ties with negative/mocking → negative.
 
 D) FINAL OUTPUT
-- Return exactly one JSON object with keys: keywords, sentiment.
+- Return exactly one JSON object with keys: topics, sentiment.
 - No extra text or metadata.
 
 EXAMPLES:
-{ "keywords": ["slow wifi", "library", "uni work"], "sentiment": "negative" }
-{ "keywords": ["crash"], "sentiment": "negative" }
+{ "topics": ["slow wifi", "library", "uni work"], "sentiment": "negative" }
+{ "topics": ["crash"], "sentiment": "negative" }
 `;
 
 export const analyzeFeedback = internalAction({
@@ -138,7 +135,7 @@ export const analyzeFeedback = internalAction({
         responseSchema: {
           type: "OBJECT",
           properties: {
-            keywords: {
+            topics: {
               type: "ARRAY",
               items: {
                 type: "STRING",
@@ -151,8 +148,8 @@ export const analyzeFeedback = internalAction({
               enum: ["positive", "neutral", "negative"],
             },
           },
-          required: ["keywords", "sentiment"],
-          propertyOrdering: ["keywords", "sentiment"],
+          required: ["topics", "sentiment"],
+          propertyOrdering: ["topics", "sentiment"],
         },
         thinkingConfig: {
           thinkingBudget: 0,
@@ -163,7 +160,7 @@ export const analyzeFeedback = internalAction({
 
     if (response.text) {
       interface result {
-        keywords: string[];
+        topics: string[];
         sentiment: "positive" | "neutral" | "negative";
       }
 
@@ -172,7 +169,7 @@ export const analyzeFeedback = internalAction({
       await ctx.runMutation(internal.feedback.analyzeFeedback, {
         feedbackId: args.feedbackId,
         sentiment: result.sentiment,
-        keywords: result.keywords,
+        topics: result.topics,
       });
     } else {
       console.error("Analysis failed");

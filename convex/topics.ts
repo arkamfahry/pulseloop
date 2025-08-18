@@ -1,9 +1,9 @@
 import { v } from "convex/values";
 import { internalMutation } from "./_generated/server";
 
-export const upsertKeyword = internalMutation({
+export const upsertTopics = internalMutation({
   args: {
-    keywords: v.array(v.string()),
+    topics: v.array(v.string()),
     sentiment: v.union(
       v.literal("positive"),
       v.literal("negative"),
@@ -11,15 +11,15 @@ export const upsertKeyword = internalMutation({
     ),
   },
   handler: async (ctx, args) => {
-    for (const keyword of args.keywords) {
+    for (const topic of args.topics) {
       const existing = await ctx.db
-        .query("keywords")
-        .withIndex("by_keyword", (q) => q.eq("keyword", keyword))
+        .query("topics")
+        .withIndex("by_topic", (q) => q.eq("topic", topic))
         .first();
 
       if (!existing) {
-        await ctx.db.insert("keywords", {
-          keyword: keyword,
+        await ctx.db.insert("topics", {
+          topic: topic,
           count: 1,
           sentiment: {
             positive: args.sentiment === "positive" ? 1 : 0,

@@ -27,7 +27,7 @@ export default defineSchema({
         v.literal("neutral"),
       ),
     ),
-    keywords: v.optional(v.array(v.string())),
+    topics: v.optional(v.array(v.string())),
     approval: v.optional(v.union(v.literal("approved"), v.literal("rejected"))),
     user: v.id("users"),
     votes: v.optional(v.number()),
@@ -37,7 +37,7 @@ export default defineSchema({
     .index("by_isPublished", ["isPublished"])
     .searchIndex("by_content", {
       searchField: "content",
-      filterFields: ["user", "isPublished", "sentiment", "keywords"],
+      filterFields: ["user", "isPublished", "sentiment", "topics"],
     }),
 
   feedbackEmbeddings: defineTable({
@@ -49,13 +49,13 @@ export default defineSchema({
         v.literal("neutral"),
       ),
     ),
-    keywords: v.optional(v.array(v.string())),
+    topics: v.optional(v.array(v.string())),
     feedback: v.id("feedbacks"),
     user: v.id("users"),
   }).vectorIndex("by_embedding", {
     vectorField: "embedding",
     dimensions: 768,
-    filterFields: ["sentiment", "keywords", "user"],
+    filterFields: ["sentiment", "topics", "user"],
   }),
 
   votes: defineTable({
@@ -63,26 +63,26 @@ export default defineSchema({
     user: v.id("users"),
   }).index("by_feedback_user", ["feedback", "user"]),
 
-  keywords: defineTable({
-    keyword: v.string(),
+  topics: defineTable({
+    topic: v.string(),
     count: v.optional(v.number()),
     sentiment: v.object({
       positive: v.optional(v.number()),
       negative: v.optional(v.number()),
       neutral: v.optional(v.number()),
     }),
-  }).index("by_keyword", ["keyword"]),
+  }).index("by_topic", ["topic"]),
 
-  keywordEmbeddings: defineTable({
+  topicEmbeddings: defineTable({
     embedding: v.optional(v.array(v.number())),
-    keyword: v.id("keywords"),
+    topic: v.id("topics"),
   }).vectorIndex("by_embedding", {
     vectorField: "embedding",
     dimensions: 768,
   }),
 
-  feedbackKeywords: defineTable({
+  feedbackTopics: defineTable({
     feedback: v.id("feedbacks"),
-    keyword: v.id("keywords"),
-  }).index("by_feedback_keyword", ["feedback", "keyword"]),
+    topic: v.id("topics"),
+  }).index("by_feedback_keyword", ["feedback", "topic"]),
 });

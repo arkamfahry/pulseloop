@@ -62,12 +62,12 @@ export const analyzeFeedback = internalMutation({
       v.literal("negative"),
       v.literal("neutral"),
     ),
-    keywords: v.array(v.string()),
+    topics: v.array(v.string()),
   },
   handler: async (ctx, args) => {
     await ctx.db.patch(args.feedbackId, {
       sentiment: args.sentiment,
-      keywords: args.keywords,
+      topics: args.topics,
       isPublished: true,
     });
 
@@ -99,7 +99,7 @@ export const embedFeedback = internalMutation({
       user: feedback.user,
       embedding: args.embedding,
       sentiment: feedback.sentiment,
-      keywords: feedback.keywords,
+      topics: feedback.topics,
     });
   },
 });
