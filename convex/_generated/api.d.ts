@@ -18,7 +18,7 @@ import type * as analysis from "../analysis.js";
 import type * as auth from "../auth.js";
 import type * as feedback from "../feedback.js";
 import type * as http from "../http.js";
-import type * as keywords from "../keywords.js";
+import type * as topics from "../topics.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -34,7 +34,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   feedback: typeof feedback;
   http: typeof http;
-  keywords: typeof keywords;
+  topics: typeof topics;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,
