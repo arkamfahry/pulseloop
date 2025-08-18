@@ -8,7 +8,10 @@ const publicRoutes = createRouteMatcher(["/", "/signin", "/signup"]);
 
 export default convexAuthNextjsMiddleware(async (request, { convexAuth }) => {
   if (await convexAuth.isAuthenticated()) {
-    if (publicRoutes(request) && request.nextUrl.pathname === "/signin") {
+    if (
+      publicRoutes(request) &&
+      ["/signin", "/signup"].includes(request.nextUrl.pathname)
+    ) {
       return nextjsMiddlewareRedirect(request, "/");
     }
     return;
