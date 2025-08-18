@@ -102,6 +102,7 @@ PROCESS:
    - Include modifiers like adjectives or context words that clarify the topic.
 - Exclude generic/stop words: good, bad, nice, great, love, use, because, from, thing, stuff, help, thanks, thank, issue, problem, app, product, feature, user.
 - If no clear topics, return one best single word.
+- If spelling errors, correct them (e.g., "wifi" instead of "wi-fi", "wifi" instead of "wfif").
 
 3) SENTIMENT
 - Classify as "positive", "neutral", or "negative".
