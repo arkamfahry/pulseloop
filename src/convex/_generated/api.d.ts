@@ -19,6 +19,7 @@ import type * as auth from "../auth.js";
 import type * as feedback from "../feedback.js";
 import type * as http from "../http.js";
 import type * as topics from "../topics.js";
+import type * as user from "../user.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -35,6 +36,7 @@ declare const fullApi: ApiFromModules<{
   feedback: typeof feedback;
   http: typeof http;
   topics: typeof topics;
+  user: typeof user;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,
