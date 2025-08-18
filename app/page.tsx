@@ -29,9 +29,8 @@ export default function HomePage() {
           </div>
         </Navbar>
       </header>
-
       <main className="flex flex-1 flex-col items-center justify-center text-center">
-        <div className="mb-4">
+       <div className="mb-4">
         <Image src="/pulseloop.svg" width={48} height={48} className="mr-3 h-12 w-12" alt="PulseLoop" />
         </div>
         <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-5xl">
