@@ -33,12 +33,12 @@ export default function SignUp() {
           const formData = new FormData(e.target as HTMLFormElement);
           formData.set("flow", "signUp")
           void signIn("password", formData)
-            .catch((error) => {
-              setError(error.message);
-            })
-            .then(() => {
-              router.push("/");
-            });
+          .then(() => {
+            router.push("/");
+          })
+          .catch((error) => {
+            setError(error.message);
+          });
         }}            
       >
         <div>

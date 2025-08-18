@@ -32,12 +32,12 @@ export default function SignIn() {
                 const formData = new FormData(e.target as HTMLFormElement);
                 formData.set("flow", "signIn")
                 void signIn("password", formData)
-                  .catch((error) => {
+                .then(() => {
+                  router.push("/");
+                })
+                .catch((error) => {
                     setError(error.message);
-                  })
-                  .then(() => {
-                    router.push("/");
-                  });
+                });
               }}            
             >
               <div>
