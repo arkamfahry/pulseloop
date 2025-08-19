@@ -2,7 +2,8 @@
 	import { useAuth } from '@mmailaender/convex-auth-svelte/sveltekit';
 	import { goto } from '$app/navigation';
 	import { Card, Label, Input, Checkbox, Button } from 'flowbite-svelte';
-	import AuthNavbar from '$lib/AuthNavbar.svelte';
+	import AuthNavbar from '$lib/Navbar.svelte';
+	import Navbar from '$lib/Navbar.svelte';
 
 	const { signIn } = useAuth();
 
@@ -43,7 +44,7 @@
 </script>
 
 <section class="bg-white dark:bg-gray-900">
-	<AuthNavbar />
+	<Navbar variant="app" />
 
 	<div class="mx-auto flex min-h-screen flex-col items-center justify-center px-6 py-8 lg:py-0">
 		<Card

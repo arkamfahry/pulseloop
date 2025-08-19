@@ -1,0 +1,28 @@
+<script lang="ts">
+	import { Button, Navbar, NavBrand } from 'flowbite-svelte';
+	import logo from '$lib/assets/favicon.svg';
+	import { useAuth } from '@mmailaender/convex-auth-svelte/sveltekit';
+
+	let { variant }: { variant: 'app' | 'auth' } = $props();
+
+	const isAuthenticated = $derived(useAuth().isAuthenticated);
+	const { signOut } = useAuth();
+</script>
+
+<Navbar fluid class="border-b border-gray-300 bg-white dark:border-gray-700 dark:bg-gray-900">
+	<NavBrand href="/">
+		<img src={logo} class="mr-3 h-9 w-9" alt="PulseLoop" />
+		<span class="self-center text-xl font-semibold whitespace-nowrap dark:text-white"
+			>PulseLoop</span
+		>
+	</NavBrand>
+	{#if variant === 'auth'}
+		<div class="flex md:order-2">
+			{#if !isAuthenticated}
+				<Button href="/signin">Sign in</Button>
+			{:else}
+				<Button onclick={() => signOut()}>Sign out</Button>
+			{/if}
+		</div>
+	{/if}
+</Navbar>
