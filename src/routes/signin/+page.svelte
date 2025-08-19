@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { useAuth } from '@mmailaender/convex-auth-svelte/sveltekit';
 	import { goto } from '$app/navigation';
-	import { Navbar, Card, Label, Input, Checkbox, Button } from 'flowbite-svelte';
-	import logo from '$lib/assets/favicon.svg';
+	import { Card, Label, Input, Checkbox, Button } from 'flowbite-svelte';
+	import AuthNavbar from '$lib/AuthNavbar.svelte';
 
 	const { signIn } = useAuth();
 
@@ -41,18 +41,11 @@
 </script>
 
 <section class="bg-white dark:bg-gray-900">
-	<Navbar>
-		<a href="/" class="flex items-center">
-			<img src={logo} class="mr-3 h-9 w-9" alt="PulseLoop" />
-			<span class="self-center text-xl font-semibold whitespace-nowrap dark:text-white"
-				>PulseLoop</span
-			>
-		</a>
-	</Navbar>
+	<AuthNavbar />
 
 	<div class="mx-auto flex min-h-screen flex-col items-center justify-center px-6 py-8 lg:py-0">
 		<Card
-			class="w-full rounded-2xl bg-white p-6 shadow sm:max-w-md md:mt-0 xl:p-0 dark:border dark:border-gray-700 dark:bg-gray-800"
+			class="w-full rounded-2xl bg-white p-6 shadow sm:max-w-md md:mt-0 dark:border dark:border-gray-700 dark:bg-gray-800"
 		>
 			<div class="space-y-4 md:space-y-6">
 				<h1
@@ -94,7 +87,7 @@
 							<Label for="remember" class="ml-2">Remember me</Label>
 						</div>
 						<a
-							href="#"
+							href="/lost-password"
 							class="text-sm font-medium text-primary-600 hover:underline dark:text-primary-500"
 						>
 							Lost Password?
