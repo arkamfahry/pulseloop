@@ -1,10 +1,10 @@
 <script lang="ts">
-	import DashboardSidebar from '$lib/DashboardSidebar.svelte';
+	import Sidebar from '$lib/Sidebar.svelte';
 	let { children } = $props();
 </script>
 
 <div class="flex h-screen">
-	<DashboardSidebar />
+	<Sidebar />
 
 	<main class="flex-1 overflow-auto p-6">
 		{@render children?.()}
