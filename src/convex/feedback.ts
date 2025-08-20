@@ -25,10 +25,18 @@ export const submitFeedback = mutation({
 			throw new Error('Feedback not found');
 		}
 
-		await workflow.start(ctx, internal.analysis.feedbackAnalysisWorkflow, {
-			feedbackId: feedback._id,
-			content: feedback.content
-		});
+		await workflow.start(
+			ctx,
+			internal.analysis.feedbackAnalysisWorkflow,
+			{
+				feedbackId: feedback._id,
+				content: feedback.content
+			},
+			{
+				onComplete: internal.workflow.cleanupWorkflow,
+				context: null
+			}
+		);
 	}
 });
 
