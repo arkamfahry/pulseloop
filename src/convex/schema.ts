@@ -27,10 +27,12 @@ export default defineSchema({
 		approval: v.optional(v.union(v.literal('approved'), v.literal('rejected'))),
 		user: v.id('users'),
 		votes: v.optional(v.number()),
-		isPublished: v.boolean()
+		isPublished: v.boolean(),
+		embeddingId: v.optional(v.id('feedbackEmbeddings'))
 	})
 		.index('by_user', ['user'])
 		.index('by_isPublished', ['isPublished'])
+		.index('by_embeddingId', ['embeddingId'])
 		.searchIndex('by_content', {
 			searchField: 'content',
 			filterFields: ['user', 'isPublished', 'sentiment', 'topics']
@@ -42,8 +44,7 @@ export default defineSchema({
 			v.union(v.literal('positive'), v.literal('negative'), v.literal('neutral'))
 		),
 		topics: v.optional(v.array(v.string())),
-		feedback: v.id('feedbacks'),
-		user: v.id('users')
+		user: v.optional(v.id('users'))
 	}).vectorIndex('by_embedding', {
 		vectorField: 'embedding',
 		dimensions: 768,
