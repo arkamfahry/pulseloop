@@ -47,7 +47,7 @@ export default defineSchema({
 		user: v.optional(v.id('users'))
 	}).vectorIndex('by_embedding', {
 		vectorField: 'embedding',
-		dimensions: 768,
+		dimensions: 1536,
 		filterFields: ['sentiment', 'topics', 'user']
 	}),
 
