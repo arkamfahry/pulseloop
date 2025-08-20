@@ -16,6 +16,7 @@ import type * as http from "../http.js";
 import type * as index from "../index.js";
 import type * as topics from "../topics.js";
 import type * as user from "../user.js";
+import type * as workflow from "../workflow.js";
 
 import type {
   ApiFromModules,
@@ -40,6 +41,7 @@ declare const fullApi: ApiFromModules<{
   index: typeof index;
   topics: typeof topics;
   user: typeof user;
+  workflow: typeof workflow;
 }>;
 declare const fullApiWithMounts: typeof fullApi;
 
