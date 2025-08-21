@@ -77,6 +77,16 @@ export const publishFeedback = internalMutation({
 			topics: args.topics,
 			isPublished: true
 		});
+
+		if (args.topics && args.topics.length > 0 && args.sentiment) {
+			await ctx.runMutation(internal.topics.updateTopicSentiments, {
+				topics: args.topics,
+				sentiment: args.sentiment
+			});
+			await ctx.runMutation(internal.sentiment.updateSentimentCounts, {
+				sentiment: args.sentiment
+			});
+		}
 	}
 });
 
