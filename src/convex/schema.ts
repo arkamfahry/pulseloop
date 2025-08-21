@@ -58,16 +58,22 @@ export default defineSchema({
 
 	topics: defineTable({
 		topic: v.string(),
-		count: v.optional(v.number()),
+		count: v.number(),
 		sentiment: v.object({
-			positive: v.optional(v.number()),
-			negative: v.optional(v.number()),
-			neutral: v.optional(v.number())
+			positive: v.number(),
+			negative: v.number(),
+			neutral: v.number()
 		})
 	}).index('by_topic', ['topic']),
 
 	feedbackTopics: defineTable({
 		feedback: v.id('feedbacks'),
 		topic: v.id('topics')
-	}).index('by_feedback_keyword', ['feedback', 'topic'])
+	}).index('by_feedback_keyword', ['feedback', 'topic']),
+
+	sentiments: defineTable({
+		negative: v.number(),
+		positive: v.number(),
+		neutral: v.number()
+	})
 });
