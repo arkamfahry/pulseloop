@@ -129,9 +129,9 @@ export const toggleFeedbackVote = mutation({
 			.withIndex('by_feedback_user', (q) => q.eq('feedback', args.feedbackId).eq('user', userId))
 			.first();
 
-		const post = await ctx.db.get(args.feedbackId);
+		const feedback = await ctx.db.get(args.feedbackId);
 
-		if (!post) {
+		if (!feedback) {
 			throw new Error('Feedback not found');
 		}
 
@@ -142,13 +142,41 @@ export const toggleFeedbackVote = mutation({
 			});
 
 			await ctx.db.patch(args.feedbackId, {
-				votes: (post.votes ?? 0) + 1
+				votes: (feedback.votes ?? 0) + 1
 			});
 		} else {
 			await ctx.db.delete(existing._id);
 
 			await ctx.db.patch(args.feedbackId, {
-				votes: Math.max((post.votes ?? 0) - 1, 0)
+				votes: Math.max((feedback.votes ?? 0) - 1, 0)
+			});
+		}
+	}
+});
+
+export const deleteFeedback = mutation({
+	args: {
+		feedbackId: v.id('feedbacks')
+	},
+	handler: async (ctx, args) => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) {
+			throw new Error('User not authenticated');
+		}
+
+		const feedback = await ctx.db.get(args.feedbackId);
+		if (!feedback) {
+			throw new Error('Feedback not found');
+		}
+
+		await ctx.db.delete(feedback._id);
+		if (feedback.topics && feedback.topics.length > 0 && feedback.sentiment) {
+			await ctx.runMutation(internal.topics.removeTopicSentiments, {
+				topics: feedback.topics,
+				sentiment: feedback.sentiment
+			});
+			await ctx.runMutation(internal.sentiment.removeSentimentCount, {
+				sentiment: feedback.sentiment
 			});
 		}
 	}
