@@ -23,3 +23,34 @@ export const updateSentimentCounts = internalMutation({
 		}
 	}
 });
+
+export const removeSentimentCount = internalMutation({
+	args: {
+		sentiment: v.union(v.literal('positive'), v.literal('negative'), v.literal('neutral'))
+	},
+	returns: v.null(),
+	handler: async (ctx, args) => {
+		const existing = await ctx.db.query('sentiments').first();
+
+		if (!existing) {
+			return null;
+		}
+
+		await ctx.db.patch(existing._id, {
+			positive:
+				args.sentiment === 'positive'
+					? Math.max((existing.positive ?? 0) - 1, 0)
+					: (existing.positive ?? 0),
+			negative:
+				args.sentiment === 'negative'
+					? Math.max((existing.negative ?? 0) - 1, 0)
+					: (existing.negative ?? 0),
+			neutral:
+				args.sentiment === 'neutral'
+					? Math.max((existing.neutral ?? 0) - 1, 0)
+					: (existing.neutral ?? 0)
+		});
+
+		return null;
+	}
+});

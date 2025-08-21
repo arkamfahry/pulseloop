@@ -36,3 +36,41 @@ export const updateTopicSentiments = internalMutation({
 		}
 	}
 });
+
+export const removeTopicSentiments = internalMutation({
+	args: {
+		topics: v.array(v.string()),
+		sentiment: v.union(v.literal('positive'), v.literal('negative'), v.literal('neutral'))
+	},
+	returns: v.null(),
+	handler: async (ctx, args) => {
+		for (const topic of args.topics) {
+			const existing = await ctx.db
+				.query('topics')
+				.withIndex('by_topic', (q) => q.eq('topic', topic))
+				.first();
+
+			if (!existing) {
+				continue;
+			}
+
+			await ctx.db.patch(existing._id, {
+				count: Math.max((existing.count || 1) - 1, 0),
+				sentiment: {
+					positive:
+						args.sentiment === 'positive'
+							? Math.max((existing.sentiment?.positive || 0) - 1, 0)
+							: existing.sentiment?.positive || 0,
+					negative:
+						args.sentiment === 'negative'
+							? Math.max((existing.sentiment?.negative || 0) - 1, 0)
+							: existing.sentiment?.negative || 0,
+					neutral:
+						args.sentiment === 'neutral'
+							? Math.max((existing.sentiment?.neutral || 0) - 1, 0)
+							: existing.sentiment?.neutral || 0
+				}
+			});
+		}
+	}
+});
