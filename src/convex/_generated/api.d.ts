@@ -14,6 +14,7 @@ import type * as auth from "../auth.js";
 import type * as feedback from "../feedback.js";
 import type * as http from "../http.js";
 import type * as index from "../index.js";
+import type * as sentiment from "../sentiment.js";
 import type * as topics from "../topics.js";
 import type * as user from "../user.js";
 import type * as workflow from "../workflow.js";
@@ -39,6 +40,7 @@ declare const fullApi: ApiFromModules<{
   feedback: typeof feedback;
   http: typeof http;
   index: typeof index;
+  sentiment: typeof sentiment;
   topics: typeof topics;
   user: typeof user;
   workflow: typeof workflow;
