@@ -6,7 +6,7 @@ export const updateSentimentCounts = internalMutation({
 		sentiment: v.union(v.literal('positive'), v.literal('negative'), v.literal('neutral'))
 	},
 	handler: async (ctx, args) => {
-		const existing = await ctx.db.query('sentiments').first();
+		const existing = await ctx.db.query('sentiments').unique();
 
 		if (!existing) {
 			await ctx.db.insert('sentiments', {
@@ -30,7 +30,7 @@ export const removeSentimentCount = internalMutation({
 	},
 	returns: v.null(),
 	handler: async (ctx, args) => {
-		const existing = await ctx.db.query('sentiments').first();
+		const existing = await ctx.db.query('sentiments').unique();
 
 		if (!existing) {
 			return null;

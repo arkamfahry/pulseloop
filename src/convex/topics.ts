@@ -11,7 +11,7 @@ export const updateTopicSentiments = internalMutation({
 			const existing = await ctx.db
 				.query('topics')
 				.withIndex('by_topic', (q) => q.eq('topic', topic))
-				.first();
+				.unique();
 
 			if (!existing) {
 				await ctx.db.insert('topics', {
@@ -48,7 +48,7 @@ export const removeTopicSentiments = internalMutation({
 			const existing = await ctx.db
 				.query('topics')
 				.withIndex('by_topic', (q) => q.eq('topic', topic))
-				.first();
+				.unique();
 
 			if (!existing) {
 				continue;
