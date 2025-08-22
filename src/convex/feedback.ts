@@ -124,30 +124,30 @@ export const toggleFeedbackVote = mutation({
 			throw new Error('User not authenticated');
 		}
 
-		const existing = await ctx.db
-			.query('votes')
-			.withIndex('by_feedback_user', (q) => q.eq('feedback', args.feedbackId).eq('user', userId))
-			.first();
-
 		const feedback = await ctx.db.get(args.feedbackId);
 
 		if (!feedback) {
 			throw new Error('Feedback not found');
 		}
 
-		if (!existing) {
+		const vote = await ctx.db
+			.query('votes')
+			.withIndex('by_feedback_user', (q) => q.eq('feedback', feedback._id).eq('user', userId))
+			.unique();
+
+		if (!vote) {
 			await ctx.db.insert('votes', {
-				feedback: args.feedbackId,
+				feedback: feedback._id,
 				user: userId
 			});
 
-			await ctx.db.patch(args.feedbackId, {
+			await ctx.db.patch(feedback._id, {
 				votes: (feedback.votes ?? 0) + 1
 			});
 		} else {
-			await ctx.db.delete(existing._id);
+			await ctx.db.delete(vote._id);
 
-			await ctx.db.patch(args.feedbackId, {
+			await ctx.db.patch(feedback._id, {
 				votes: Math.max((feedback.votes ?? 0) - 1, 0)
 			});
 		}
