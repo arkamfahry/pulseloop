@@ -3,6 +3,7 @@ import { v } from 'convex/values';
 import { internal } from './_generated/api';
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { workflow } from '.';
+import { paginationOptsValidator } from 'convex/server';
 
 export const submitFeedback = mutation({
 	args: {
@@ -192,11 +193,12 @@ export const getFeedbackById = query({
 });
 
 export const listPublishedFeedback = query({
-	handler: async (ctx) => {
+	args: { paginationOpts: paginationOptsValidator },
+	handler: async (ctx, args) => {
 		return await ctx.db
 			.query('feedbacks')
 			.filter((q) => q.eq(q.field('isPublished'), true))
-			.collect();
+			.paginate(args.paginationOpts);
 	}
 });
 
