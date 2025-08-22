@@ -17,6 +17,7 @@ export const submitFeedback = mutation({
 		const feedbackId = await ctx.db.insert('feedbacks', {
 			content: args.content,
 			user: userId,
+			status: 'open',
 			isPublished: false
 		});
 

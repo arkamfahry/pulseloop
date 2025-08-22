@@ -25,6 +25,7 @@ export default defineSchema({
 		),
 		topics: v.optional(v.array(v.string())),
 		approval: v.optional(v.union(v.literal('approved'), v.literal('rejected'))),
+		status: v.optional(v.union(v.literal('open'), v.literal('noted'))),
 		user: v.id('users'),
 		votes: v.optional(v.number()),
 		isPublished: v.boolean(),
