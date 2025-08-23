@@ -1,10 +1,10 @@
 import { v } from 'convex/values';
 import { internalMutation } from './_generated/server';
 
-export const updateTopicSentiments = internalMutation({
+export const addTopics = internalMutation({
 	args: {
 		topics: v.array(v.string()),
-		sentiment: v.union(v.literal('positive'), v.literal('negative'), v.literal('neutral'))
+		feedbackId: v.id('feedbacks')
 	},
 	handler: async (ctx, args) => {
 		for (const topic of args.topics) {
@@ -14,33 +14,28 @@ export const updateTopicSentiments = internalMutation({
 				.unique();
 
 			if (!existing) {
-				await ctx.db.insert('topics', {
-					topic: topic,
-					count: 1,
-					sentiment: {
-						positive: args.sentiment === 'positive' ? 1 : 0,
-						negative: args.sentiment === 'negative' ? 1 : 0,
-						neutral: args.sentiment === 'neutral' ? 1 : 0
-					}
+				const _id = await ctx.db.insert('topics', {
+					topic: topic
+				});
+
+				await ctx.db.insert('feedbackTopics', {
+					feedback: args.feedbackId,
+					topic: _id
 				});
 			} else {
-				await ctx.db.patch(existing._id, {
-					count: (existing.count || 0) + 1,
-					sentiment: {
-						positive: (existing.sentiment?.positive || 0) + (args.sentiment === 'positive' ? 1 : 0),
-						negative: (existing.sentiment?.negative || 0) + (args.sentiment === 'negative' ? 1 : 0),
-						neutral: (existing.sentiment?.neutral || 0) + (args.sentiment === 'neutral' ? 1 : 0)
-					}
+				await ctx.db.insert('feedbackTopics', {
+					feedback: args.feedbackId,
+					topic: existing._id
 				});
 			}
 		}
 	}
 });
 
-export const removeTopicSentiments = internalMutation({
+export const removeTopics = internalMutation({
 	args: {
 		topics: v.array(v.string()),
-		sentiment: v.union(v.literal('positive'), v.literal('negative'), v.literal('neutral'))
+		feedbackId: v.id('feedbacks')
 	},
 	returns: v.null(),
 	handler: async (ctx, args) => {
@@ -54,23 +49,16 @@ export const removeTopicSentiments = internalMutation({
 				continue;
 			}
 
-			await ctx.db.patch(existing._id, {
-				count: Math.max((existing.count || 1) - 1, 0),
-				sentiment: {
-					positive:
-						args.sentiment === 'positive'
-							? Math.max((existing.sentiment?.positive || 0) - 1, 0)
-							: existing.sentiment?.positive || 0,
-					negative:
-						args.sentiment === 'negative'
-							? Math.max((existing.sentiment?.negative || 0) - 1, 0)
-							: existing.sentiment?.negative || 0,
-					neutral:
-						args.sentiment === 'neutral'
-							? Math.max((existing.sentiment?.neutral || 0) - 1, 0)
-							: existing.sentiment?.neutral || 0
-				}
-			});
+			const feedbackTopic = await ctx.db
+				.query('feedbackTopics')
+				.withIndex('by_feedback_keyword', (q) =>
+					q.eq('feedback', args.feedbackId).eq('topic', existing._id)
+				)
+				.unique();
+
+			if (feedbackTopic) {
+				await ctx.db.delete(feedbackTopic._id);
+			}
 		}
 	}
 });

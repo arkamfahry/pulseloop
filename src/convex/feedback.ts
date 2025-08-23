@@ -81,12 +81,9 @@ export const publishFeedback = internalMutation({
 		});
 
 		if (args.topics && args.topics.length > 0 && args.sentiment) {
-			await ctx.runMutation(internal.topics.updateTopicSentiments, {
+			await ctx.runMutation(internal.topics.addTopics, {
 				topics: args.topics,
-				sentiment: args.sentiment
-			});
-			await ctx.runMutation(internal.sentiment.updateSentimentCounts, {
-				sentiment: args.sentiment
+				feedbackId: args.feedbackId
 			});
 		}
 	}
@@ -173,12 +170,9 @@ export const deleteFeedback = mutation({
 
 		await ctx.db.delete(feedback._id);
 		if (feedback.topics && feedback.topics.length > 0 && feedback.sentiment) {
-			await ctx.runMutation(internal.topics.removeTopicSentiments, {
+			await ctx.runMutation(internal.topics.removeTopics, {
 				topics: feedback.topics,
-				sentiment: feedback.sentiment
-			});
-			await ctx.runMutation(internal.sentiment.removeSentimentCount, {
-				sentiment: feedback.sentiment
+				feedbackId: args.feedbackId
 			});
 		}
 	}
