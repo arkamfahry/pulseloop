@@ -26,12 +26,12 @@ export default defineSchema({
 		topics: v.optional(v.array(v.string())),
 		approval: v.optional(v.union(v.literal('approved'), v.literal('rejected'))),
 		status: v.optional(v.union(v.literal('open'), v.literal('noted'))),
-		userId: v.id('users'),
 		votes: v.optional(v.number()),
 		isPublished: v.boolean(),
+		userId: v.id('users'),
 		embeddingId: v.optional(v.id('feedbackEmbeddings'))
 	})
-		.index('by_user', ['userId'])
+		.index('by_userId', ['userId'])
 		.index('by_isPublished', ['isPublished'])
 		.index('by_embeddingId', ['embeddingId'])
 		.searchIndex('by_content', {
@@ -58,7 +58,8 @@ export default defineSchema({
 	}).index('by_feedbackId_userId', ['feedbackId', 'userId']),
 
 	topics: defineTable({
-		topic: v.string()
+		topic: v.string(),
+		count: v.number()
 	}).index('by_topic', ['topic']),
 
 	feedbackTopics: defineTable({

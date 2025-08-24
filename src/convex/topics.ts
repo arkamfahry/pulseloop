@@ -15,7 +15,8 @@ export const addTopics = internalMutation({
 
 			if (!existing) {
 				const _id = await ctx.db.insert('topics', {
-					topic: topic
+					topic: topic,
+					count: 1
 				});
 
 				await ctx.db.insert('feedbackTopics', {
@@ -23,6 +24,10 @@ export const addTopics = internalMutation({
 					topicId: _id
 				});
 			} else {
+				await ctx.db.patch(existing._id, {
+					count: existing.count + 1
+				});
+
 				await ctx.db.insert('feedbackTopics', {
 					feedbackId: args.feedbackId,
 					topicId: existing._id
@@ -48,6 +53,10 @@ export const removeTopics = internalMutation({
 			if (!existing) {
 				continue;
 			}
+
+			await ctx.db.patch(existing._id, {
+				count: Math.max(existing.count - 1, 0)
+			});
 
 			const feedbackTopic = await ctx.db
 				.query('feedbackTopics')
