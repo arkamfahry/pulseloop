@@ -26,17 +26,17 @@ export default defineSchema({
 		topics: v.optional(v.array(v.string())),
 		approval: v.optional(v.union(v.literal('approved'), v.literal('rejected'))),
 		status: v.optional(v.union(v.literal('open'), v.literal('noted'))),
-		user: v.id('users'),
+		userId: v.id('users'),
 		votes: v.optional(v.number()),
 		isPublished: v.boolean(),
 		embeddingId: v.optional(v.id('feedbackEmbeddings'))
 	})
-		.index('by_user', ['user'])
+		.index('by_user', ['userId'])
 		.index('by_isPublished', ['isPublished'])
 		.index('by_embeddingId', ['embeddingId'])
 		.searchIndex('by_content', {
 			searchField: 'content',
-			filterFields: ['user', 'isPublished', 'sentiment', 'topics']
+			filterFields: ['isPublished', 'sentiment', 'topics', 'userId']
 		}),
 
 	feedbackEmbeddings: defineTable({
@@ -45,24 +45,24 @@ export default defineSchema({
 			v.union(v.literal('positive'), v.literal('negative'), v.literal('neutral'))
 		),
 		topics: v.optional(v.array(v.string())),
-		user: v.optional(v.id('users'))
+		userId: v.optional(v.id('users'))
 	}).vectorIndex('by_embedding', {
 		vectorField: 'embedding',
 		dimensions: 1536,
-		filterFields: ['sentiment', 'topics', 'user']
+		filterFields: ['sentiment', 'topics', 'userId']
 	}),
 
 	votes: defineTable({
-		feedback: v.id('feedbacks'),
-		user: v.id('users')
-	}).index('by_feedback_user', ['feedback', 'user']),
+		feedbackId: v.id('feedbacks'),
+		userId: v.id('users')
+	}).index('by_feedbackId_userId', ['feedbackId', 'userId']),
 
 	topics: defineTable({
 		topic: v.string()
 	}).index('by_topic', ['topic']),
 
 	feedbackTopics: defineTable({
-		feedback: v.id('feedbacks'),
-		topic: v.id('topics')
-	}).index('by_feedback_keyword', ['feedback', 'topic'])
+		feedbackId: v.id('feedbacks'),
+		topicId: v.id('topics')
+	}).index('by_feedbackId_topicId', ['feedbackId', 'topicId'])
 });

@@ -17,7 +17,7 @@ export const submitFeedback = mutation({
 
 		const feedbackId = await ctx.db.insert('feedbacks', {
 			content: args.content,
-			user: userId,
+			userId: userId,
 			status: 'open',
 			isPublished: false
 		});
@@ -101,7 +101,7 @@ export const attachFeedbackEmbedding = internalMutation({
 		}
 
 		const embeddingId = await ctx.db.insert('feedbackEmbeddings', {
-			user: feedback.user,
+			userId: feedback.userId,
 			embedding: args.embedding,
 			sentiment: feedback.sentiment,
 			topics: feedback.topics
@@ -131,13 +131,15 @@ export const toggleFeedbackVote = mutation({
 
 		const vote = await ctx.db
 			.query('votes')
-			.withIndex('by_feedback_user', (q) => q.eq('feedback', feedback._id).eq('user', userId))
+			.withIndex('by_feedbackId_userId', (q) =>
+				q.eq('feedbackId', feedback._id).eq('userId', userId)
+			)
 			.unique();
 
 		if (!vote) {
 			await ctx.db.insert('votes', {
-				feedback: feedback._id,
-				user: userId
+				feedbackId: feedback._id,
+				userId: userId
 			});
 
 			await ctx.db.patch(feedback._id, {

@@ -19,13 +19,13 @@ export const addTopics = internalMutation({
 				});
 
 				await ctx.db.insert('feedbackTopics', {
-					feedback: args.feedbackId,
-					topic: _id
+					feedbackId: args.feedbackId,
+					topicId: _id
 				});
 			} else {
 				await ctx.db.insert('feedbackTopics', {
-					feedback: args.feedbackId,
-					topic: existing._id
+					feedbackId: args.feedbackId,
+					topicId: existing._id
 				});
 			}
 		}
@@ -51,8 +51,8 @@ export const removeTopics = internalMutation({
 
 			const feedbackTopic = await ctx.db
 				.query('feedbackTopics')
-				.withIndex('by_feedback_keyword', (q) =>
-					q.eq('feedback', args.feedbackId).eq('topic', existing._id)
+				.withIndex('by_feedbackId_topicId', (q) =>
+					q.eq('feedbackId', args.feedbackId).eq('topicId', existing._id)
 				)
 				.unique();
 
