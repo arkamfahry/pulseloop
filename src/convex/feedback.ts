@@ -208,3 +208,13 @@ export const getFeedbackByEmbeddingId = internalQuery({
 		return feedback;
 	}
 });
+
+export const listUnpublishedFeedback = query({
+	args: { paginationOpts: paginationOptsValidator },
+	handler: async (ctx, args) => {
+		return await ctx.db
+			.query('feedbacks')
+			.filter((q) => q.eq(q.field('isPublished'), false))
+			.paginate(args.paginationOpts);
+	}
+});
