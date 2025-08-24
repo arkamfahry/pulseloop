@@ -57,12 +57,6 @@ export default defineSchema({
 		userId: v.id('users')
 	}).index('by_feedbackId_userId', ['feedbackId', 'userId']),
 
-	comments: defineTable({
-		content: v.string(),
-		feedbackId: v.id('feedbacks'),
-		userId: v.id('users')
-	}).index('by_feedbackId_userId', ['feedbackId', 'userId']),
-
 	topics: defineTable({
 		topic: v.string()
 	}).index('by_topic', ['topic']),
