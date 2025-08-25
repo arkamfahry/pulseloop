@@ -24,16 +24,17 @@ export default defineSchema({
 		approval: v.optional(v.union(v.literal('approved'), v.literal('rejected'))),
 		status: v.optional(v.union(v.literal('open'), v.literal('noted'))),
 		votes: v.optional(v.number()),
-		isPublished: v.boolean(),
+		published: v.boolean(),
 		userId: v.id('users'),
 		embeddingId: v.optional(v.id('feedbackEmbeddings'))
 	})
 		.index('by_userId', ['userId'])
-		.index('by_isPublished', ['isPublished'])
+		.index('by_published', ['published'])
 		.index('by_embeddingId', ['embeddingId'])
+		.index('by_approval_sentiment_topics_status', ['approval', 'sentiment', 'topics', 'status'])
 		.searchIndex('by_content', {
 			searchField: 'content',
-			filterFields: ['isPublished', 'sentiment', 'topics', 'userId']
+			filterFields: ['approval', 'sentiment', 'topics', 'status', 'userId']
 		}),
 
 	feedbackEmbeddings: defineTable({
