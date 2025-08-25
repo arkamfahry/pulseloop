@@ -19,7 +19,7 @@ export const submitFeedback = mutation({
 			content: args.content,
 			userId: userId,
 			status: 'open',
-			isPublished: false
+			published: false
 		});
 
 		const feedback = await ctx.db.get(feedbackId);
@@ -77,7 +77,7 @@ export const publishFeedback = internalMutation({
 		await ctx.db.patch(args.feedbackId, {
 			sentiment: args.sentiment,
 			topics: args.topics,
-			isPublished: true
+			published: true
 		});
 
 		if (args.topics && args.topics.length > 0 && args.sentiment) {
@@ -193,7 +193,7 @@ export const listPublishedFeedback = query({
 	handler: async (ctx, args) => {
 		return await ctx.db
 			.query('feedbacks')
-			.filter((q) => q.eq(q.field('isPublished'), true))
+			.withIndex('by_published', (q) => q.eq('published', true))
 			.paginate(args.paginationOpts);
 	}
 });
@@ -214,7 +214,7 @@ export const listUnpublishedFeedback = query({
 	handler: async (ctx, args) => {
 		return await ctx.db
 			.query('feedbacks')
-			.filter((q) => q.eq(q.field('isPublished'), false))
+			.withIndex('by_published', (q) => q.eq('published', false))
 			.paginate(args.paginationOpts);
 	}
 });
