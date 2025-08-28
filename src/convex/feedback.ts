@@ -1,23 +1,24 @@
 import { internalMutation, internalQuery, mutation, query } from './_generated/server';
 import { v } from 'convex/values';
 import { internal } from './_generated/api';
-import { getAuthUserId } from '@convex-dev/auth/server';
+import { betterAuthComponent } from './auth';
 import { workflow } from '.';
-import { paginationOptsValidator } from 'convex/server';
+import { OrderedQuery, paginationOptsValidator, Query, QueryInitializer } from 'convex/server';
+import { DataModel, Id } from './_generated/dataModel';
 
 export const submitFeedback = mutation({
 	args: {
 		content: v.string()
 	},
 	handler: async (ctx, args) => {
-		const userId = await getAuthUserId(ctx);
+		const userId = await betterAuthComponent.getAuthUserId(ctx);
 		if (!userId) {
 			throw new Error('User not authenticated');
 		}
 
 		const feedbackId = await ctx.db.insert('feedbacks', {
 			content: args.content,
-			userId: userId,
+			userId: userId as Id<'users'>,
 			status: 'open',
 			published: false
 		});
@@ -118,7 +119,7 @@ export const toggleFeedbackVote = mutation({
 		feedbackId: v.id('feedbacks')
 	},
 	handler: async (ctx, args) => {
-		const userId = await getAuthUserId(ctx);
+		const userId = await betterAuthComponent.getAuthUserId(ctx);
 		if (!userId) {
 			throw new Error('User not authenticated');
 		}
@@ -132,14 +133,14 @@ export const toggleFeedbackVote = mutation({
 		const vote = await ctx.db
 			.query('votes')
 			.withIndex('by_feedbackId_userId', (q) =>
-				q.eq('feedbackId', feedback._id).eq('userId', userId)
+				q.eq('feedbackId', feedback._id).eq('userId', userId as Id<'users'>)
 			)
 			.unique();
 
 		if (!vote) {
 			await ctx.db.insert('votes', {
 				feedbackId: feedback._id,
-				userId: userId
+				userId: userId as Id<'users'>
 			});
 
 			await ctx.db.patch(feedback._id, {
@@ -160,7 +161,7 @@ export const deleteFeedback = mutation({
 		feedbackId: v.id('feedbacks')
 	},
 	handler: async (ctx, args) => {
-		const userId = await getAuthUserId(ctx);
+		const userId = await betterAuthComponent.getAuthUserId(ctx);
 		if (!userId) {
 			throw new Error('User not authenticated');
 		}
@@ -193,7 +194,8 @@ export const listPublishedFeedback = query({
 	handler: async (ctx, args) => {
 		return await ctx.db
 			.query('feedbacks')
-			.withIndex('by_published', (q) => q.eq('published', true))
+			.withIndex('by_published_votes', (q) => q.eq('published', true))
+			.order('desc')
 			.paginate(args.paginationOpts);
 	}
 });
@@ -214,7 +216,86 @@ export const listUnpublishedFeedback = query({
 	handler: async (ctx, args) => {
 		return await ctx.db
 			.query('feedbacks')
-			.withIndex('by_published', (q) => q.eq('published', false))
+			.withIndex('by_published_votes', (q) => q.eq('published', false))
+			.order('desc')
 			.paginate(args.paginationOpts);
+	}
+});
+
+export const searchFeedback = query({
+	args: {
+		search: v.optional(v.string()),
+		sentiment: v.optional(
+			v.union(v.literal('positive'), v.literal('negative'), v.literal('neutral'))
+		),
+		status: v.optional(v.union(v.literal('open'), v.literal('noted'))),
+		topics: v.optional(v.array(v.string())),
+		from: v.optional(v.int64()),
+		to: v.optional(v.int64()),
+		sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
+		paginationOpts: paginationOptsValidator
+	},
+	handler: async (ctx, args) => {
+		if (args.search) {
+			const result = await ctx.db
+				.query('feedbacks')
+				.withSearchIndex('by_content', (q) => {
+					let expr = q.search('content', args.search!).eq('published', true);
+					if (args.sentiment) {
+						expr = expr.eq('sentiment', args.sentiment);
+					}
+					if (args.status) {
+						expr = expr.eq('status', args.status);
+					}
+
+					return expr;
+				})
+				.paginate(args.paginationOpts);
+
+			if (args.from) {
+				result.page = result.page.filter((q) => q._creationTime >= args.from!);
+			}
+			if (args.to) {
+				result.page = result.page.filter((q) => q._creationTime <= args.to!);
+			}
+
+			if (args.sort) {
+				result.page = result.page.sort((a, b) => {
+					if (args.sort === 'asc') {
+						return (a.votes ?? 0) - (b.votes ?? 0);
+					} else {
+						return (b.votes ?? 0) - (a.votes ?? 0);
+					}
+				});
+			}
+
+			return result;
+		} else {
+			const tableQuery: QueryInitializer<DataModel['feedbacks']> = ctx.db.query('feedbacks');
+
+			let indexedQuery: Query<DataModel['feedbacks']> = tableQuery;
+			if (args.sentiment && args.status) {
+				indexedQuery = tableQuery.withIndex('by_published_sentiment_status_votes', (q) =>
+					q.eq('published', true).eq('sentiment', args.sentiment).eq('status', args.status)
+				);
+			} else if (args.sentiment) {
+				indexedQuery = tableQuery.withIndex('by_published_sentiment_votes', (q) =>
+					q.eq('published', true).eq('sentiment', args.sentiment)
+				);
+			} else if (args.status) {
+				indexedQuery = tableQuery.withIndex('by_published_status_votes', (q) =>
+					q.eq('published', true).eq('status', args.status)
+				);
+			}
+
+			let orderQuery: OrderedQuery<DataModel['feedbacks']> = indexedQuery;
+			if (args.sort === 'asc') {
+				orderQuery = indexedQuery.order('asc');
+			} else {
+				orderQuery = indexedQuery.order('desc');
+			}
+
+			return await orderQuery.paginate(args.paginationOpts);
+		}
 	}
 });
