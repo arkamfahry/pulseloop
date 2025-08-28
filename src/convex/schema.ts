@@ -1,9 +1,7 @@
 import { defineSchema, defineTable } from 'convex/server';
 import { v } from 'convex/values';
-import { authTables } from '@convex-dev/auth/server';
 
 export default defineSchema({
-	...authTables,
 	users: defineTable({
 		name: v.optional(v.string()),
 		image: v.optional(v.string()),
@@ -28,13 +26,15 @@ export default defineSchema({
 		userId: v.id('users'),
 		embeddingId: v.optional(v.id('feedbackEmbeddings'))
 	})
-		.index('by_userId', ['userId'])
-		.index('by_published', ['published'])
 		.index('by_embeddingId', ['embeddingId'])
-		.index('by_approval_sentiment_topics_status', ['approval', 'sentiment', 'topics', 'status'])
+		.index('by_userId_votes', ['userId', 'votes'])
+		.index('by_published_votes', ['published', 'votes'])
+		.index('by_published_sentiment_votes', ['published', 'sentiment', 'votes'])
+		.index('by_published_status_votes', ['published', 'status', 'votes'])
+		.index('by_published_sentiment_status_votes', ['published', 'sentiment', 'status', 'votes'])
 		.searchIndex('by_content', {
 			searchField: 'content',
-			filterFields: ['approval', 'sentiment', 'topics', 'status', 'userId']
+			filterFields: ['published', 'sentiment', 'topics', 'status', 'userId']
 		}),
 
 	feedbackEmbeddings: defineTable({
