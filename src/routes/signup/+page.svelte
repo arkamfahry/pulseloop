@@ -1,27 +1,14 @@
 <script lang="ts">
-	import { useAuth } from '@mmailaender/convex-auth-svelte/sveltekit';
+	import { authClient } from '$lib/auth-client.js';
 	import { goto } from '$app/navigation';
 	import { Card, Label, Input, Checkbox, Button } from 'flowbite-svelte';
-	import AuthNavbar from '$lib/Navbar.svelte';
 	import Navbar from '$lib/Navbar.svelte';
-
-	const { signIn } = useAuth();
 
 	let error: string | null = $state(null);
 	let submitting = $state(false);
-	let name = $state('');
-	let email = $state('');
-	let password = $state('');
-	let remember = $state(false);
-
-	function handleEmailSignUp(name: string, email: string, password: string) {
-		return signIn('password', {
-			flow: 'signUp',
-			name: name,
-			email: email,
-			password: password
-		});
-	}
+	let name: string = $state('');
+	let email: string = $state('');
+	let password: string = $state('');
 
 	async function handleSubmit(e: Event) {
 		e.preventDefault();
@@ -29,7 +16,7 @@
 		submitting = true;
 
 		try {
-			await handleEmailSignUp(name, email, password);
+			await authClient.signUp.email({ name, email, password });
 			goto('/');
 		} catch (err: any) {
 			if (err?.message) {
@@ -92,10 +79,6 @@
 					</div>
 
 					<div class="flex items-center justify-between">
-						<div class="flex items-start">
-							<Checkbox id="remember" bind:checked={remember} />
-							<Label for="remember" class="ml-2">Remember me</Label>
-						</div>
 						<a
 							href="/lost-password"
 							class="text-sm font-medium text-primary-600 hover:underline dark:text-primary-500"

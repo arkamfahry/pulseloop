@@ -7,7 +7,13 @@
 		uiHelpers,
 		SidebarBrand
 	} from 'flowbite-svelte';
-	import { ChartPieOutline, LightbulbOutline, MessageDotsOutline } from 'flowbite-svelte-icons';
+	import {
+		ChartOutline,
+		ChartPieOutline,
+		MessageDotsOutline,
+		ObjectsColumnOutline,
+		PaperPlaneOutline
+	} from 'flowbite-svelte-icons';
 	import { page } from '$app/state';
 	import logo from '$lib/assets/favicon.svg';
 
@@ -55,9 +61,21 @@
 			{/snippet}
 		</SidebarItem>
 
-		<SidebarItem label="Insight" href="/dashboard/insight">
+		<SidebarItem label="Topic" href="/dashboard/topic">
 			{#snippet icon()}
-				<LightbulbOutline class="h-5 w-5 text-gray-500 group-hover:text-gray-900" />
+				<ObjectsColumnOutline class="h-5 w-5 text-gray-500 group-hover:text-gray-900" />
+			{/snippet}
+		</SidebarItem>
+
+		<SidebarItem label="Sentiment" href="/dashboard/sentiment">
+			{#snippet icon()}
+				<ChartOutline class="h-5 w-5 text-gray-500 group-hover:text-gray-900" />
+			{/snippet}
+		</SidebarItem>
+
+		<SidebarItem label="Approval" href="/dashboard/approval">
+			{#snippet icon()}
+				<PaperPlaneOutline class="h-5 w-5 text-gray-500 group-hover:text-gray-900" />
 			{/snippet}
 		</SidebarItem>
 	</SidebarGroup>

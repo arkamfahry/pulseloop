@@ -1,6 +1,6 @@
 <script>
 	import { Button } from 'flowbite-svelte';
-	import { useAuth } from '@mmailaender/convex-auth-svelte/sveltekit';
+	import { useAuth } from '@mmailaender/convex-better-auth-svelte/svelte';
 	import logo from '$lib/assets/favicon.svg';
 	import Navbar from '$lib/Navbar.svelte';
 

@@ -1,25 +1,13 @@
 <script lang="ts">
-	import { useAuth } from '@mmailaender/convex-auth-svelte/sveltekit';
 	import { goto } from '$app/navigation';
 	import { Card, Label, Input, Checkbox, Button } from 'flowbite-svelte';
-	import AuthNavbar from '$lib/Navbar.svelte';
 	import Navbar from '$lib/Navbar.svelte';
-
-	const { signIn } = useAuth();
+	import { authClient } from '$lib/auth-client';
 
 	let error: string | null = $state(null);
 	let submitting = $state(false);
-	let email = $state('');
-	let password = $state('');
-	let remember = $state(false);
-
-	function handleEmailSignIn(email: string, password: string) {
-		return signIn('password', {
-			flow: 'signIn',
-			email: email,
-			password: password
-		});
-	}
+	let email: string = $state('');
+	let password: string = $state('');
 
 	async function handleSubmit(e: Event) {
 		e.preventDefault();
@@ -27,7 +15,7 @@
 		submitting = true;
 
 		try {
-			await handleEmailSignIn(email, password);
+			await authClient.signIn.email({ email, password });
 			goto('/');
 		} catch (err: any) {
 			if (err?.message) {
@@ -83,10 +71,6 @@
 					</div>
 
 					<div class="flex items-center justify-between">
-						<div class="flex items-start">
-							<Checkbox id="remember" bind:checked={remember} />
-							<Label for="remember" class="ml-2">Remember me</Label>
-						</div>
 						<a
 							href="/lost-password"
 							class="text-sm font-medium text-primary-600 hover:underline dark:text-primary-500"
