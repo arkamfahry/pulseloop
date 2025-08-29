@@ -22,7 +22,7 @@
 		</h1>
 		<div class="mt-6">
 			{#if !isAuthenticated}
-				<Button href="/signin" size="lg">Sign In</Button>
+				<Button href="/auth/signin" size="lg">Sign In</Button>
 			{/if}
 		</div>
 	</main>
