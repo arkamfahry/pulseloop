@@ -29,9 +29,11 @@
 	}
 </script>
 
-<section class="bg-white dark:bg-gray-900">
+<header class="absolute top-0 z-10 w-full bg-transparent">
 	<Navbar variant="app" />
+</header>
 
+<main class="bg-white dark:bg-gray-900">
 	<div class="mx-auto flex min-h-screen flex-col items-center justify-center px-6 py-8 lg:py-0">
 		<Card
 			class="w-full rounded-2xl bg-white p-6 shadow sm:max-w-md md:mt-0 dark:border dark:border-gray-700 dark:bg-gray-800"
@@ -104,4 +106,4 @@
 			</div>
 		</Card>
 	</div>
-</section>
+</main>
