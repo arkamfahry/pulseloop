@@ -20,7 +20,9 @@ export const submitFeedback = mutation({
 			content: args.content,
 			userId: userId as Id<'users'>,
 			status: 'open',
-			published: false
+			votes: 0,
+			published: false,
+			createdAt: Date.now()
 		});
 
 		const feedback = await ctx.db.get(feedbackId);
@@ -192,11 +194,23 @@ export const getFeedbackById = query({
 export const listPublishedFeedback = query({
 	args: { paginationOpts: paginationOptsValidator },
 	handler: async (ctx, args) => {
-		return await ctx.db
+		const feedbacks = await ctx.db
 			.query('feedbacks')
 			.withIndex('by_published_votes', (q) => q.eq('published', true))
 			.order('desc')
 			.paginate(args.paginationOpts);
+
+		const feedbacksWithUsers = await Promise.all(
+			feedbacks.page.map(async (feedback) => {
+				const user = await ctx.db.get(feedback.userId);
+				return { ...feedback, user };
+			})
+		);
+
+		return {
+			...feedbacks,
+			page: feedbacksWithUsers
+		};
 	}
 });
 
@@ -214,88 +228,117 @@ export const getFeedbackByEmbeddingId = internalQuery({
 export const listUnpublishedFeedback = query({
 	args: { paginationOpts: paginationOptsValidator },
 	handler: async (ctx, args) => {
-		return await ctx.db
+		const feedbacks = await ctx.db
 			.query('feedbacks')
 			.withIndex('by_published_votes', (q) => q.eq('published', false))
 			.order('desc')
 			.paginate(args.paginationOpts);
+
+		const feedbacksWithUsers = await Promise.all(
+			feedbacks.page.map(async (feedback) => {
+				const user = await ctx.db.get(feedback.userId);
+				return { ...feedback, user };
+			})
+		);
+
+		return {
+			...feedbacks,
+			page: feedbacksWithUsers
+		};
 	}
 });
 
 export const searchFeedback = query({
 	args: {
-		search: v.optional(v.string()),
+		content: v.optional(v.string()),
 		sentiment: v.optional(
 			v.union(v.literal('positive'), v.literal('negative'), v.literal('neutral'))
 		),
 		status: v.optional(v.union(v.literal('open'), v.literal('noted'))),
-		topics: v.optional(v.array(v.string())),
-		from: v.optional(v.int64()),
-		to: v.optional(v.int64()),
+		from: v.optional(v.number()),
+		to: v.optional(v.number()),
 		sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
 		paginationOpts: paginationOptsValidator
 	},
 	handler: async (ctx, args) => {
-		if (args.search) {
-			const result = await ctx.db
-				.query('feedbacks')
-				.withSearchIndex('by_content', (q) => {
-					let expr = q.search('content', args.search!).eq('published', true);
-					if (args.sentiment) {
-						expr = expr.eq('sentiment', args.sentiment);
+		const tableQuery: QueryInitializer<DataModel['feedbacks']> = ctx.db.query('feedbacks');
+		let indexedQuery: Query<DataModel['feedbacks']> = tableQuery;
+		let orderedQuery: OrderedQuery<DataModel['feedbacks']> = indexedQuery;
+
+		if (args.content) {
+			orderedQuery = tableQuery.withSearchIndex('by_content', (q) => {
+				let expr = q.search('content', args.content!).eq('published', true);
+
+				if (args.sentiment) {
+					expr = expr.eq('sentiment', args.sentiment);
+				}
+
+				if (args.status) {
+					expr = expr.eq('status', args.status);
+				}
+
+				return expr;
+			});
+
+			if (args.from && args.to) {
+				orderedQuery = orderedQuery.filter((q) =>
+					q.and(q.gte(q.field('createdAt'), args.from!), q.lte(q.field('createdAt'), args.to!))
+				);
+			}
+		} else {
+			if (args.sentiment && args.status) {
+				indexedQuery = tableQuery.withIndex(
+					'by_published_sentiment_status_createdAt_votes',
+					(q) => {
+						const expr = q
+							.eq('published', true)
+							.eq('sentiment', args.sentiment!)
+							.eq('status', args.status!);
+
+						if (args.from && args.to) {
+							return expr.gte('createdAt', args.from!).lte('createdAt', args.to!);
+						}
+
+						return expr;
 					}
-					if (args.status) {
-						expr = expr.eq('status', args.status);
+				);
+			} else if (args.sentiment) {
+				indexedQuery = tableQuery.withIndex('by_published_sentiment_createdAt_votes', (q) => {
+					const expr = q.eq('published', true).eq('sentiment', args.sentiment!);
+
+					if (args.from && args.to) {
+						return expr.gte('createdAt', args.from!).lte('createdAt', args.to!);
 					}
 
 					return expr;
-				})
-				.paginate(args.paginationOpts);
+				});
+			} else if (args.status) {
+				indexedQuery = tableQuery.withIndex('by_published_status_createdAt_votes', (q) => {
+					const expr = q.eq('published', true).eq('status', args.status!);
 
-			if (args.from) {
-				result.page = result.page.filter((q) => q._creationTime >= args.from!);
-			}
-			if (args.to) {
-				result.page = result.page.filter((q) => q._creationTime <= args.to!);
-			}
-
-			if (args.sort) {
-				result.page = result.page.sort((a, b) => {
-					if (args.sort === 'asc') {
-						return (a.votes ?? 0) - (b.votes ?? 0);
-					} else {
-						return (b.votes ?? 0) - (a.votes ?? 0);
+					if (args.from && args.to) {
+						return expr.gte('createdAt', args.from!).lte('createdAt', args.to!);
 					}
+
+					return expr;
 				});
 			}
 
-			return result;
-		} else {
-			const tableQuery: QueryInitializer<DataModel['feedbacks']> = ctx.db.query('feedbacks');
-
-			let indexedQuery: Query<DataModel['feedbacks']> = tableQuery;
-			if (args.sentiment && args.status) {
-				indexedQuery = tableQuery.withIndex('by_published_sentiment_status_votes', (q) =>
-					q.eq('published', true).eq('sentiment', args.sentiment).eq('status', args.status)
-				);
-			} else if (args.sentiment) {
-				indexedQuery = tableQuery.withIndex('by_published_sentiment_votes', (q) =>
-					q.eq('published', true).eq('sentiment', args.sentiment)
-				);
-			} else if (args.status) {
-				indexedQuery = tableQuery.withIndex('by_published_status_votes', (q) =>
-					q.eq('published', true).eq('status', args.status)
-				);
-			}
-
-			let orderQuery: OrderedQuery<DataModel['feedbacks']> = indexedQuery;
-			if (args.sort === 'asc') {
-				orderQuery = indexedQuery.order('asc');
-			} else {
-				orderQuery = indexedQuery.order('desc');
-			}
-
-			return await orderQuery.paginate(args.paginationOpts);
+			orderedQuery = indexedQuery.order('desc');
 		}
+
+		const feedbacks = await orderedQuery.paginate(args.paginationOpts);
+
+		const feedbacksWithUsers = await Promise.all(
+			feedbacks.page.map(async (feedback) => {
+				const user = await ctx.db.get(feedback.userId);
+				return { ...feedback, user };
+			})
+		);
+
+		return {
+			...feedbacks,
+			page: feedbacksWithUsers
+		};
 	}
 });
