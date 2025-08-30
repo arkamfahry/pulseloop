@@ -21,20 +21,32 @@ export default defineSchema({
 		topics: v.optional(v.array(v.string())),
 		approval: v.optional(v.union(v.literal('approved'), v.literal('rejected'))),
 		status: v.optional(v.union(v.literal('open'), v.literal('noted'))),
-		votes: v.optional(v.number()),
+		votes: v.number(),
 		published: v.boolean(),
 		userId: v.id('users'),
-		embeddingId: v.optional(v.id('feedbackEmbeddings'))
+		embeddingId: v.optional(v.id('feedbackEmbeddings')),
+		createdAt: v.number()
 	})
 		.index('by_embeddingId', ['embeddingId'])
 		.index('by_userId_votes', ['userId', 'votes'])
 		.index('by_published_votes', ['published', 'votes'])
-		.index('by_published_sentiment_votes', ['published', 'sentiment', 'votes'])
-		.index('by_published_status_votes', ['published', 'status', 'votes'])
-		.index('by_published_sentiment_status_votes', ['published', 'sentiment', 'status', 'votes'])
+		.index('by_published_sentiment_createdAt_votes', [
+			'published',
+			'sentiment',
+			'createdAt',
+			'votes'
+		])
+		.index('by_published_status_createdAt_votes', ['published', 'status', 'createdAt', 'votes'])
+		.index('by_published_sentiment_status_createdAt_votes', [
+			'published',
+			'sentiment',
+			'status',
+			'createdAt',
+			'votes'
+		])
 		.searchIndex('by_content', {
 			searchField: 'content',
-			filterFields: ['published', 'sentiment', 'topics', 'status', 'userId']
+			filterFields: ['published', 'sentiment', 'status', 'userId']
 		}),
 
 	feedbackEmbeddings: defineTable({
