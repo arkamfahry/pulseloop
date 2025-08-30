@@ -131,7 +131,7 @@ export const findSimilarFeedbackAndReassignTopic = internalAction({
 			if (feedback) {
 				await ctx.runMutation(internal.feedback.publishFeedback, {
 					feedbackId: args.feedbackId,
-					topics: feedback.topics,
+					keywords: feedback.keywords,
 					sentiment: feedback.sentiment
 				});
 			}
@@ -142,12 +142,12 @@ export const findSimilarFeedbackAndReassignTopic = internalAction({
 	}
 });
 
-const extractFeedbackTopicsAndSentimentPrompt = `
+const extractFeedbackKeywordsAndSentimentPrompt = `
 You are an analytical extractor. Input:
 - "content": the post text ({CONTENT})
 
 Return exactly one JSON object:
-{ "topics": [...], "sentiment": "..." }
+{ "keywords": [...], "sentiment": "..." }
 
 PROCESS:
 
@@ -155,34 +155,35 @@ PROCESS:
 - Lowercase, remove punctuation (keep internal apostrophes), collapse spaces, trim.
 - Ignore <CODE_BLOCK> and <PII>.
 
-2) CONTEXT-AWARE TOPIC EXTRACTION
-- Identify 1-3 main topics (max 2 words each), ordered by importance.
-- Prioritize meaningful phrases: 
-   - Adjective + noun (e.g., "slow wifi")
-   - Noun + noun (e.g., "library wifi")
-   - Include modifiers like adjectives or context words that clarify the topic.
-- Exclude generic/stop words: good, bad, nice, great, love, use, because, from, thing, stuff, help, thanks, thank, issue, problem, app, product, feature, user.
-- If no clear topics, return one best single word.
-- If spelling errors, correct them (e.g., "wifi" instead of "wi-fi", "wifi" instead of "wfif").
+2) KEYWORD EXTRACTION
+- Extract 1-3 meaningful keywords, ordered by importance.
+- Include relevant modifiers that add context:
+  - Adjective + noun pairs: "slow wifi", "broken printer"
+  - Important standalone nouns: "library", "cafeteria", "exam"
+  - Action words when relevant: "crashing", "freezing", "loading"
+- Exclude generic/stop words: good, bad, nice, great, love, hate, use, using, because, from, thing, stuff, help, thanks, thank, issue, problem, very, really, quite, just, also, but, and, the, this, that, have, has, get, got, make, made, work, works, working.
+- Fix common spelling errors: "wifi" (not "wi-fi"), "lab" (not "laab"), etc.
+- Keep domain-specific terms: course names, building names, specific services.
 
-3) SENTIMENT
+3) SENTIMENT  
 - Classify as "positive", "neutral", or "negative".
 - Use tone, punctuation, emojis (👍🙂=positive, 😡👎=negative, 😐=neutral).
 - Sarcasm/irony → negative.
 - Short posts (≤5 tokens) → emojis/punctuation as tie-breakers; ambiguous → neutral.
 
 EXAMPLES:
-{ "topics": ["slow wifi", "library"], "sentiment": "negative" }
-{ "topics": ["crash"], "sentiment": "negative" }
+{ "keywords": ["slow wifi", "library", "disconnecting"], "sentiment": "negative" }
+{ "keywords": ["crash", "lab computer"], "sentiment": "negative" }
+{ "keywords": ["cafeteria food", "delicious"], "sentiment": "positive" }
 `;
 
-export const extractFeedbackTopicsAndSentiment = internalAction({
+export const extractFeedbackKeywordsAndSentiment = internalAction({
 	args: {
 		feedbackId: v.id('feedbacks'),
 		content: v.string()
 	},
 	handler: async (ctx, args) => {
-		const prompt = extractFeedbackTopicsAndSentimentPrompt.replace('{CONTENT}', args.content);
+		const prompt = extractFeedbackKeywordsAndSentimentPrompt.replace('{CONTENT}', args.content);
 		const response = await ai.models.generateContent({
 			model: 'gemini-2.5-flash',
 			contents: prompt,
@@ -191,7 +192,7 @@ export const extractFeedbackTopicsAndSentiment = internalAction({
 				responseSchema: {
 					type: 'OBJECT',
 					properties: {
-						topics: {
+						keywords: {
 							type: 'ARRAY',
 							items: {
 								type: 'STRING'
@@ -204,8 +205,8 @@ export const extractFeedbackTopicsAndSentiment = internalAction({
 							enum: ['positive', 'neutral', 'negative']
 						}
 					},
-					required: ['topics', 'sentiment'],
-					propertyOrdering: ['topics', 'sentiment']
+					required: ['keywords', 'sentiment'],
+					propertyOrdering: ['keywords', 'sentiment']
 				},
 				thinkingConfig: {
 					thinkingBudget: 0
@@ -216,7 +217,7 @@ export const extractFeedbackTopicsAndSentiment = internalAction({
 
 		if (response.text) {
 			interface result {
-				topics: string[];
+				keywords: string[];
 				sentiment: 'positive' | 'neutral' | 'negative';
 			}
 
@@ -224,7 +225,7 @@ export const extractFeedbackTopicsAndSentiment = internalAction({
 
 			await ctx.runMutation(internal.feedback.publishFeedback, {
 				feedbackId: args.feedbackId,
-				topics: result.topics,
+				keywords: result.keywords,
 				sentiment: result.sentiment
 			});
 		} else {
@@ -267,7 +268,7 @@ export const feedbackAnalysisWorkflow = workflow.define({
 		);
 
 		if (!similarFeedback) {
-			await step.runAction(internal.analysis.extractFeedbackTopicsAndSentiment, {
+			await step.runAction(internal.analysis.extractFeedbackKeywordsAndSentiment, {
 				feedbackId: args.feedbackId,
 				content: args.content
 			});

@@ -74,18 +74,18 @@ export const publishFeedback = internalMutation({
 		sentiment: v.optional(
 			v.union(v.literal('positive'), v.literal('negative'), v.literal('neutral'))
 		),
-		topics: v.optional(v.array(v.string()))
+		keywords: v.optional(v.array(v.string()))
 	},
 	handler: async (ctx, args) => {
 		await ctx.db.patch(args.feedbackId, {
 			sentiment: args.sentiment,
-			topics: args.topics,
+			keywords: args.keywords,
 			published: true
 		});
 
-		if (args.topics && args.topics.length > 0 && args.sentiment) {
-			await ctx.runMutation(internal.topics.addTopics, {
-				topics: args.topics,
+		if (args.keywords && args.keywords.length > 0 && args.sentiment) {
+			await ctx.runMutation(internal.keywords.addKeywords, {
+				keywords: args.keywords,
 				feedbackId: args.feedbackId
 			});
 		}
@@ -107,7 +107,7 @@ export const attachFeedbackEmbedding = internalMutation({
 			userId: feedback.userId,
 			embedding: args.embedding,
 			sentiment: feedback.sentiment,
-			topics: feedback.topics
+			keywords: feedback.keywords
 		});
 
 		await ctx.db.patch(args.feedbackId, {
@@ -174,9 +174,9 @@ export const deleteFeedback = mutation({
 		}
 
 		await ctx.db.delete(feedback._id);
-		if (feedback.topics && feedback.topics.length > 0 && feedback.sentiment) {
-			await ctx.runMutation(internal.topics.removeTopics, {
-				topics: feedback.topics,
+		if (feedback.keywords && feedback.keywords.length > 0 && feedback.sentiment) {
+			await ctx.runMutation(internal.keywords.removeKeywords, {
+				keywords: feedback.keywords,
 				feedbackId: args.feedbackId
 			});
 		}

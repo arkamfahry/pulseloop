@@ -18,7 +18,7 @@ export default defineSchema({
 		sentiment: v.optional(
 			v.union(v.literal('positive'), v.literal('negative'), v.literal('neutral'))
 		),
-		topics: v.optional(v.array(v.string())),
+		keywords: v.optional(v.array(v.string())),
 		approval: v.optional(v.union(v.literal('approved'), v.literal('rejected'))),
 		status: v.optional(v.union(v.literal('open'), v.literal('noted'))),
 		votes: v.number(),
@@ -54,12 +54,12 @@ export default defineSchema({
 		sentiment: v.optional(
 			v.union(v.literal('positive'), v.literal('negative'), v.literal('neutral'))
 		),
-		topics: v.optional(v.array(v.string())),
+		keywords: v.optional(v.array(v.string())),
 		userId: v.optional(v.id('users'))
 	}).vectorIndex('by_embedding', {
 		vectorField: 'embedding',
 		dimensions: 1536,
-		filterFields: ['sentiment', 'topics', 'userId']
+		filterFields: ['sentiment', 'keywords', 'userId']
 	}),
 
 	votes: defineTable({
@@ -67,16 +67,15 @@ export default defineSchema({
 		userId: v.id('users')
 	}).index('by_feedbackId_userId', ['feedbackId', 'userId']),
 
-	topics: defineTable({
-		topic: v.string(),
-		count: v.number()
-	}).index('by_topic', ['topic']),
+	keywords: defineTable({
+		keyword: v.string()
+	}).index('by_keyword', ['keyword']),
 
-	feedbackTopics: defineTable({
+	feedbackKeywords: defineTable({
 		feedbackId: v.id('feedbacks'),
-		topicId: v.id('topics')
+		keywordId: v.id('keywords')
 	})
 		.index('by_feedbackId', ['feedbackId'])
-		.index('by_topicId', ['topicId'])
-		.index('by_feedbackId_topicId', ['feedbackId', 'topicId'])
+		.index('by_keywordId', ['keywordId'])
+		.index('by_feedbackId_keywordId', ['feedbackId', 'keywordId'])
 });
