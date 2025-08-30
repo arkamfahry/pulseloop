@@ -3,8 +3,8 @@ import { v } from 'convex/values';
 import { internal } from './_generated/api';
 import { betterAuthComponent } from './auth';
 import { workflow } from '.';
-import { OrderedQuery, paginationOptsValidator, Query, QueryInitializer } from 'convex/server';
-import { DataModel, Id } from './_generated/dataModel';
+import { OrderedQuery, Query, QueryInitializer } from 'convex/server';
+import { DataModel, Doc, Id } from './_generated/dataModel';
 
 export const submitFeedback = mutation({
 	args: {
@@ -192,16 +192,16 @@ export const getFeedbackById = query({
 });
 
 export const listPublishedFeedback = query({
-	args: { paginationOpts: paginationOptsValidator },
+	args: {},
 	handler: async (ctx, args) => {
 		const feedbacks = await ctx.db
 			.query('feedbacks')
 			.withIndex('by_published_votes', (q) => q.eq('published', true))
 			.order('desc')
-			.paginate(args.paginationOpts);
+			.collect();
 
 		const feedbacksWithUsers = await Promise.all(
-			feedbacks.page.map(async (feedback) => {
+			feedbacks.map(async (feedback) => {
 				const user = await ctx.db.get(feedback.userId);
 				return { ...feedback, user };
 			})
@@ -226,16 +226,16 @@ export const getFeedbackByEmbeddingId = internalQuery({
 });
 
 export const listUnpublishedFeedback = query({
-	args: { paginationOpts: paginationOptsValidator },
+	args: {},
 	handler: async (ctx, args) => {
 		const feedbacks = await ctx.db
 			.query('feedbacks')
 			.withIndex('by_published_votes', (q) => q.eq('published', false))
 			.order('desc')
-			.paginate(args.paginationOpts);
+			.collect();
 
 		const feedbacksWithUsers = await Promise.all(
-			feedbacks.page.map(async (feedback) => {
+			feedbacks.map(async (feedback) => {
 				const user = await ctx.db.get(feedback.userId);
 				return { ...feedback, user };
 			})
@@ -257,13 +257,13 @@ export const searchFeedback = query({
 		status: v.optional(v.union(v.literal('open'), v.literal('noted'))),
 		from: v.optional(v.number()),
 		to: v.optional(v.number()),
-		sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
-		paginationOpts: paginationOptsValidator
+		votes: v.optional(v.union(v.literal('asc'), v.literal('desc')))
 	},
 	handler: async (ctx, args) => {
 		const tableQuery: QueryInitializer<DataModel['feedbacks']> = ctx.db.query('feedbacks');
 		let indexedQuery: Query<DataModel['feedbacks']> = tableQuery;
 		let orderedQuery: OrderedQuery<DataModel['feedbacks']> = indexedQuery;
+		let feedbacks: Array<Doc<'feedbacks'>> = [];
 
 		if (args.content) {
 			orderedQuery = tableQuery.withSearchIndex('by_content', (q) => {
@@ -284,6 +284,14 @@ export const searchFeedback = query({
 				orderedQuery = orderedQuery.filter((q) =>
 					q.and(q.gte(q.field('createdAt'), args.from!), q.lte(q.field('createdAt'), args.to!))
 				);
+			}
+
+			feedbacks = await orderedQuery.collect();
+
+			if (args.votes === 'asc') {
+				feedbacks = feedbacks.sort((a, b) => a.votes - b.votes);
+			} else {
+				feedbacks = feedbacks.sort((a, b) => b.votes - a.votes);
 			}
 		} else {
 			if (args.sentiment && args.status) {
@@ -322,23 +330,26 @@ export const searchFeedback = query({
 
 					return expr;
 				});
+			} else {
+				indexedQuery = tableQuery.withIndex('by_published_votes', (q) => q.eq('published', true));
 			}
 
-			orderedQuery = indexedQuery.order('desc');
+			if (args.votes === 'asc') {
+				orderedQuery = indexedQuery.order('asc');
+			} else {
+				orderedQuery = indexedQuery.order('desc');
+			}
+
+			feedbacks = await orderedQuery.collect();
 		}
 
-		const feedbacks = await orderedQuery.paginate(args.paginationOpts);
-
 		const feedbacksWithUsers = await Promise.all(
-			feedbacks.page.map(async (feedback) => {
+			feedbacks.map(async (feedback) => {
 				const user = await ctx.db.get(feedback.userId);
 				return { ...feedback, user };
 			})
 		);
 
-		return {
-			...feedbacks,
-			page: feedbacksWithUsers
-		};
+		return feedbacksWithUsers;
 	}
 });
