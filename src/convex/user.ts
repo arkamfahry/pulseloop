@@ -1,14 +1,15 @@
+import { Id } from "./_generated/dataModel";
 import { query } from "./_generated/server";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { betterAuthComponent } from './auth';
 
 export const getUserRole = query({
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await betterAuthComponent.getAuthUserId(ctx);
     if (!userId) {
       throw new Error("User not authenticated");
     }
 
-    const user = await ctx.db.get(userId);
+    const user = await ctx.db.get(userId as Id<"users">);
     if (!user) {
       throw new Error("User not found");
     }

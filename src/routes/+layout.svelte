@@ -3,13 +3,14 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import { PUBLIC_CONVEX_URL } from '$env/static/public';
 	import { setupConvex } from 'convex-svelte';
-	import { setupConvexAuth } from '@mmailaender/convex-auth-svelte/sveltekit';
+	import { createSvelteAuthClient } from '@mmailaender/convex-better-auth-svelte/svelte';
+	import { authClient } from '$lib/auth-client';
 
 	setupConvex(PUBLIC_CONVEX_URL);
 
-	let { children, data } = $props();
+	createSvelteAuthClient({ authClient });
 
-	setupConvexAuth({ getServerState: () => data.authState });
+	let { children } = $props();
 </script>
 
 <svelte:head>

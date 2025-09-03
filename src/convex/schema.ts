@@ -1,88 +1,81 @@
-import { defineSchema, defineTable } from "convex/server";
-import { v } from "convex/values";
-import { authTables } from "@convex-dev/auth/server";
+import { defineSchema, defineTable } from 'convex/server';
+import { v } from 'convex/values';
 
-// The schema is normally optional, but Convex Auth
-// requires indexes defined on `authTables`.
-// The schema provides more precise TypeScript types.
 export default defineSchema({
-  ...authTables,
-  users: defineTable({
-    name: v.optional(v.string()),
-    image: v.optional(v.string()),
-    email: v.optional(v.string()),
-    emailVerificationTime: v.optional(v.number()),
-    phone: v.optional(v.string()),
-    phoneVerificationTime: v.optional(v.number()),
-    isAnonymous: v.optional(v.boolean()),
-    role: v.optional(v.union(v.literal("user"), v.literal("admin"))),
-  }).index("email", ["email"]),
+	users: defineTable({
+		name: v.optional(v.string()),
+		image: v.optional(v.string()),
+		email: v.optional(v.string()),
+		emailVerificationTime: v.optional(v.number()),
+		phone: v.optional(v.string()),
+		phoneVerificationTime: v.optional(v.number()),
+		isAnonymous: v.optional(v.boolean()),
+		role: v.optional(v.union(v.literal('user'), v.literal('admin')))
+	}).index('email', ['email']),
 
-  feedbacks: defineTable({
-    content: v.string(),
-    sentiment: v.optional(
-      v.union(
-        v.literal("positive"),
-        v.literal("negative"),
-        v.literal("neutral"),
-      ),
-    ),
-    topics: v.optional(v.array(v.string())),
-    approval: v.optional(v.union(v.literal("approved"), v.literal("rejected"))),
-    user: v.id("users"),
-    votes: v.optional(v.number()),
-    isPublished: v.boolean(),
-  })
-    .index("by_user", ["user"])
-    .index("by_isPublished", ["isPublished"])
-    .searchIndex("by_content", {
-      searchField: "content",
-      filterFields: ["user", "isPublished", "sentiment", "topics"],
-    }),
+	feedbacks: defineTable({
+		content: v.string(),
+		sentiment: v.optional(
+			v.union(v.literal('positive'), v.literal('negative'), v.literal('neutral'))
+		),
+		keywords: v.optional(v.array(v.string())),
+		approval: v.optional(v.union(v.literal('approved'), v.literal('rejected'))),
+		status: v.optional(v.union(v.literal('open'), v.literal('noted'))),
+		votes: v.number(),
+		published: v.boolean(),
+		userId: v.id('users'),
+		embeddingId: v.optional(v.id('feedbackEmbeddings')),
+		createdAt: v.number()
+	})
+		.index('by_embeddingId', ['embeddingId'])
+		.index('by_userId_votes', ['userId', 'votes'])
+		.index('by_published_votes', ['published', 'votes'])
+		.index('by_published_sentiment_createdAt_votes', [
+			'published',
+			'sentiment',
+			'createdAt',
+			'votes'
+		])
+		.index('by_published_status_createdAt_votes', ['published', 'status', 'createdAt', 'votes'])
+		.index('by_published_sentiment_status_createdAt_votes', [
+			'published',
+			'sentiment',
+			'status',
+			'createdAt',
+			'votes'
+		])
+		.searchIndex('by_content', {
+			searchField: 'content',
+			filterFields: ['published', 'sentiment', 'status', 'userId']
+		}),
 
-  feedbackEmbeddings: defineTable({
-    embedding: v.optional(v.array(v.number())),
-    sentiment: v.optional(
-      v.union(
-        v.literal("positive"),
-        v.literal("negative"),
-        v.literal("neutral"),
-      ),
-    ),
-    topics: v.optional(v.array(v.string())),
-    feedback: v.id("feedbacks"),
-    user: v.id("users"),
-  }).vectorIndex("by_embedding", {
-    vectorField: "embedding",
-    dimensions: 768,
-    filterFields: ["sentiment", "topics", "user"],
-  }),
+	feedbackEmbeddings: defineTable({
+		embedding: v.optional(v.array(v.number())),
+		sentiment: v.optional(
+			v.union(v.literal('positive'), v.literal('negative'), v.literal('neutral'))
+		),
+		keywords: v.optional(v.array(v.string())),
+		userId: v.optional(v.id('users'))
+	}).vectorIndex('by_embedding', {
+		vectorField: 'embedding',
+		dimensions: 1536,
+		filterFields: ['sentiment', 'keywords', 'userId']
+	}),
 
-  votes: defineTable({
-    feedback: v.id("feedbacks"),
-    user: v.id("users"),
-  }).index("by_feedback_user", ["feedback", "user"]),
+	votes: defineTable({
+		feedbackId: v.id('feedbacks'),
+		userId: v.id('users')
+	}).index('by_feedbackId_userId', ['feedbackId', 'userId']),
 
-  topics: defineTable({
-    topic: v.string(),
-    count: v.optional(v.number()),
-    sentiment: v.object({
-      positive: v.optional(v.number()),
-      negative: v.optional(v.number()),
-      neutral: v.optional(v.number()),
-    }),
-  }).index("by_topic", ["topic"]),
+	keywords: defineTable({
+		keyword: v.string()
+	}).index('by_keyword', ['keyword']),
 
-  topicEmbeddings: defineTable({
-    embedding: v.optional(v.array(v.number())),
-    topic: v.id("topics"),
-  }).vectorIndex("by_embedding", {
-    vectorField: "embedding",
-    dimensions: 768,
-  }),
-
-  feedbackTopics: defineTable({
-    feedback: v.id("feedbacks"),
-    topic: v.id("topics"),
-  }).index("by_feedback_keyword", ["feedback", "topic"]),
+	feedbackKeywords: defineTable({
+		feedbackId: v.id('feedbacks'),
+		keywordId: v.id('keywords')
+	})
+		.index('by_feedbackId', ['feedbackId'])
+		.index('by_keywordId', ['keywordId'])
+		.index('by_feedbackId_keywordId', ['feedbackId', 'keywordId'])
 });

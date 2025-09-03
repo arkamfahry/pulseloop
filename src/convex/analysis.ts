@@ -1,11 +1,12 @@
-import { v } from "convex/values";
-import { internalAction } from "./_generated/server";
-import { GoogleGenAI } from "@google/genai";
-import { internal } from "./_generated/api";
+import { v } from 'convex/values';
+import { internalAction } from './_generated/server';
+import { GoogleGenAI } from '@google/genai';
+import { internal } from './_generated/api';
+import { workflow } from '.';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-const moderationPrompt = `
+const moderateFeedbackPrompt = `
 You are an approval moderator for a real-time feedback pipeline. Input: a single string named "post" ({CONTENT}). Follow these rules EXACTLY and return exactly one JSON object (no extra text):
 
 1) PREPROCESSING
@@ -35,58 +36,118 @@ Example outputs:
 `;
 
 export const moderateFeedback = internalAction({
-  args: {
-    feedbackId: v.id("feedbacks"),
-    content: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const prompt = moderationPrompt.replace("{CONTENT}", args.content);
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: "OBJECT",
-          properties: {
-            approval: {
-              type: "STRING",
-              enum: ["approved", "rejected"],
-            },
-          },
-          required: ["approval"],
-          propertyOrdering: ["approval"],
-        },
-        thinkingConfig: {
-          thinkingBudget: 0,
-        },
-        temperature: 0.0,
-      },
-    });
+	args: {
+		feedbackId: v.id('feedbacks'),
+		content: v.string()
+	},
+	handler: async (ctx, args) => {
+		const prompt = moderateFeedbackPrompt.replace('{CONTENT}', args.content);
+		const response = await ai.models.generateContent({
+			model: 'gemini-2.5-flash',
+			contents: prompt,
+			config: {
+				responseMimeType: 'application/json',
+				responseSchema: {
+					type: 'OBJECT',
+					properties: {
+						approval: {
+							type: 'STRING',
+							enum: ['approved', 'rejected']
+						}
+					},
+					required: ['approval'],
+					propertyOrdering: ['approval']
+				},
+				thinkingConfig: {
+					thinkingBudget: 0
+				},
+				temperature: 0.0
+			}
+		});
 
-    if (response.text) {
-      interface result {
-        approval: "approved" | "rejected";
-      }
+		if (response.text) {
+			interface result {
+				approval: 'approved' | 'rejected';
+			}
 
-      const result: result = JSON.parse(response.text);
+			const result: result = JSON.parse(response.text);
 
-      await ctx.runMutation(internal.feedback.moderateFeedback, {
-        feedbackId: args.feedbackId,
-        approval: result.approval,
-      });
-    } else {
-      console.error("Moderation failed");
-    }
-  },
+			return result;
+		} else {
+			throw new Error('Moderation failed');
+		}
+	}
 });
 
-const analysisPrompt = `
+export const generateFeedbackEmbedding = internalAction({
+	args: {
+		feedbackId: v.id('feedbacks'),
+		content: v.string()
+	},
+	handler: async (ctx, args) => {
+		const response = await ai.models.embedContent({
+			model: 'gemini-embedding-001',
+			contents: args.content,
+			config: {
+				taskType: 'SEMANTIC_SIMILARITY',
+				outputDimensionality: 1536
+			}
+		});
+
+		if (response.embeddings && response.embeddings.length > 0) {
+			const values = response.embeddings[0].values;
+			if (values) {
+				return values;
+			} else {
+				throw new Error('No embedding values found');
+			}
+		} else {
+			throw new Error('Embedding failed');
+		}
+	}
+});
+
+export const findSimilarFeedbackAndReassignTopic = internalAction({
+	args: {
+		feedbackId: v.id('feedbacks'),
+		embedding: v.array(v.number())
+	},
+	handler: async (ctx, args) => {
+		const results = await ctx.vectorSearch('feedbackEmbeddings', 'by_embedding', {
+			vector: args.embedding,
+			limit: 1
+		});
+
+		if (results.length === 0) {
+			return false;
+		}
+
+		const bestMatch = results[0];
+		if (bestMatch._score > 0.9) {
+			const feedback = await ctx.runQuery(internal.feedback.getFeedbackByEmbeddingId, {
+				embeddingId: bestMatch._id
+			});
+
+			if (feedback) {
+				await ctx.runMutation(internal.feedback.publishFeedback, {
+					feedbackId: args.feedbackId,
+					keywords: feedback.keywords,
+					sentiment: feedback.sentiment
+				});
+			}
+			return true;
+		}
+
+		return false;
+	}
+});
+
+const extractFeedbackKeywordsAndSentimentPrompt = `
 You are an analytical extractor. Input:
 - "content": the post text ({CONTENT})
 
 Return exactly one JSON object:
-{ "topics": [...], "sentiment": "..." }
+{ "keywords": [...], "sentiment": "..." }
 
 PROCESS:
 
@@ -94,107 +155,131 @@ PROCESS:
 - Lowercase, remove punctuation (keep internal apostrophes), collapse spaces, trim.
 - Ignore <CODE_BLOCK> and <PII>.
 
-2) CONTEXT-AWARE TOPIC EXTRACTION
-- Identify 1-3 main topics (max 2 words each), ordered by importance.
-- Prioritize meaningful phrases: 
-   - Adjective + noun (e.g., "slow wifi")
-   - Noun + noun (e.g., "library wifi")
-   - Include modifiers like adjectives or context words that clarify the topic.
-- Exclude generic/stop words: good, bad, nice, great, love, use, because, from, thing, stuff, help, thanks, thank, issue, problem, app, product, feature, user.
-- If no clear topics, return one best single word.
-- If spelling errors, correct them (e.g., "wifi" instead of "wi-fi", "wifi" instead of "wfif").
+2) KEYWORD EXTRACTION
+- Extract 1-3 meaningful keywords, ordered by importance.
+- Include relevant modifiers that add context:
+  - Adjective + noun pairs: "slow wifi", "broken printer"
+  - Important standalone nouns: "library", "cafeteria", "exam"
+  - Action words when relevant: "crashing", "freezing", "loading"
+- Exclude generic/stop words: good, bad, nice, great, love, hate, use, using, because, from, thing, stuff, help, thanks, thank, issue, problem, very, really, quite, just, also, but, and, the, this, that, have, has, get, got, make, made, work, works, working.
+- Fix common spelling errors: "wifi" (not "wi-fi"), "lab" (not "laab"), etc.
+- Keep domain-specific terms: course names, building names, specific services.
 
-3) SENTIMENT
+3) SENTIMENT  
 - Classify as "positive", "neutral", or "negative".
 - Use tone, punctuation, emojis (👍🙂=positive, 😡👎=negative, 😐=neutral).
 - Sarcasm/irony → negative.
 - Short posts (≤5 tokens) → emojis/punctuation as tie-breakers; ambiguous → neutral.
 
 EXAMPLES:
-{ "topics": ["slow wifi", "library"], "sentiment": "negative" }
-{ "topics": ["crash"], "sentiment": "negative" }
+{ "keywords": ["slow wifi", "library", "disconnecting"], "sentiment": "negative" }
+{ "keywords": ["crash", "lab computer"], "sentiment": "negative" }
+{ "keywords": ["cafeteria food", "delicious"], "sentiment": "positive" }
 `;
 
-export const analyzeFeedback = internalAction({
-  args: {
-    feedbackId: v.id("feedbacks"),
-    content: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const prompt = analysisPrompt.replace("{CONTENT}", args.content);
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: "OBJECT",
-          properties: {
-            topics: {
-              type: "ARRAY",
-              items: {
-                type: "STRING",
-              },
-              minItems: 1,
-              maxItems: 3,
-            },
-            sentiment: {
-              type: "STRING",
-              enum: ["positive", "neutral", "negative"],
-            },
-          },
-          required: ["topics", "sentiment"],
-          propertyOrdering: ["topics", "sentiment"],
-        },
-        thinkingConfig: {
-          thinkingBudget: 0,
-        },
-        temperature: 0.0,
-      },
-    });
+export const extractFeedbackKeywordsAndSentiment = internalAction({
+	args: {
+		feedbackId: v.id('feedbacks'),
+		content: v.string()
+	},
+	handler: async (ctx, args) => {
+		const prompt = extractFeedbackKeywordsAndSentimentPrompt.replace('{CONTENT}', args.content);
+		const response = await ai.models.generateContent({
+			model: 'gemini-2.5-flash',
+			contents: prompt,
+			config: {
+				responseMimeType: 'application/json',
+				responseSchema: {
+					type: 'OBJECT',
+					properties: {
+						keywords: {
+							type: 'ARRAY',
+							items: {
+								type: 'STRING'
+							},
+							minItems: 1,
+							maxItems: 3
+						},
+						sentiment: {
+							type: 'STRING',
+							enum: ['positive', 'neutral', 'negative']
+						}
+					},
+					required: ['keywords', 'sentiment'],
+					propertyOrdering: ['keywords', 'sentiment']
+				},
+				thinkingConfig: {
+					thinkingBudget: 0
+				},
+				temperature: 0.0
+			}
+		});
 
-    if (response.text) {
-      interface result {
-        topics: string[];
-        sentiment: "positive" | "neutral" | "negative";
-      }
+		if (response.text) {
+			interface result {
+				keywords: string[];
+				sentiment: 'positive' | 'neutral' | 'negative';
+			}
 
-      const result: result = JSON.parse(response.text);
+			const result: result = JSON.parse(response.text);
 
-      await ctx.runMutation(internal.feedback.analyzeFeedback, {
-        feedbackId: args.feedbackId,
-        sentiment: result.sentiment,
-        topics: result.topics,
-      });
-    } else {
-      console.error("Analysis failed");
-    }
-  },
+			await ctx.runMutation(internal.feedback.publishFeedback, {
+				feedbackId: args.feedbackId,
+				keywords: result.keywords,
+				sentiment: result.sentiment
+			});
+		} else {
+			throw new Error('Analysis failed');
+		}
+	}
 });
 
-export const embedFeedback = internalAction({
-  args: {
-    feedbackId: v.id("feedbacks"),
-    content: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const response = await ai.models.embedContent({
-      model: "gemini-embedding-001",
-      contents: args.content,
-    });
+export const feedbackAnalysisWorkflow = workflow.define({
+	args: {
+		feedbackId: v.id('feedbacks'),
+		content: v.string(),
+		moderate: v.boolean()
+	},
+	handler: async (step, args): Promise<void> => {
+		if (!args.moderate) {
+			const moderated = await step.runAction(internal.analysis.moderateFeedback, {
+				feedbackId: args.feedbackId,
+				content: args.content
+			});
 
-    if (response.embeddings && response.embeddings.length > 0) {
-      const values = response.embeddings[0].values;
-      if (values) {
-        await ctx.runMutation(internal.feedback.embedFeedback, {
-          feedbackId: args.feedbackId,
-          embedding: values,
-        });
-      } else {
-        console.error("No embedding values found");
-      }
-    } else {
-      console.error("Embedding failed");
-    }
-  },
+			await step.runMutation(internal.feedback.setFeedbackApproval, {
+				feedbackId: args.feedbackId,
+				approval: moderated.approval
+			});
+
+			if (moderated.approval === 'rejected') {
+				return;
+			}
+		}
+
+		const embedding = await step.runAction(internal.analysis.generateFeedbackEmbedding, {
+			feedbackId: args.feedbackId,
+			content: args.content
+		});
+
+		const similarFeedback = await step.runAction(
+			internal.analysis.findSimilarFeedbackAndReassignTopic,
+			{
+				feedbackId: args.feedbackId,
+				embedding: embedding
+			}
+		);
+
+		if (!similarFeedback) {
+			await step.runAction(internal.analysis.extractFeedbackKeywordsAndSentiment, {
+				feedbackId: args.feedbackId,
+				content: args.content
+			});
+		}
+
+		await step.runMutation(internal.feedback.attachFeedbackEmbedding, {
+			feedbackId: args.feedbackId,
+			embedding: embedding
+		});
+	}
 });
