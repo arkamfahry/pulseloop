@@ -35,7 +35,8 @@ export const submitFeedback = mutation({
 			internal.analysis.feedbackAnalysisWorkflow,
 			{
 				feedbackId: feedback._id,
-				content: feedback.content
+				content: feedback.content,
+				moderate: true
 			},
 			{
 				onComplete: internal.workflow.cleanupWorkflow,

@@ -237,21 +237,24 @@ export const extractFeedbackKeywordsAndSentiment = internalAction({
 export const feedbackAnalysisWorkflow = workflow.define({
 	args: {
 		feedbackId: v.id('feedbacks'),
-		content: v.string()
+		content: v.string(),
+		moderate: v.boolean()
 	},
 	handler: async (step, args): Promise<void> => {
-		const moderated = await step.runAction(internal.analysis.moderateFeedback, {
-			feedbackId: args.feedbackId,
-			content: args.content
-		});
+		if (!args.moderate) {
+			const moderated = await step.runAction(internal.analysis.moderateFeedback, {
+				feedbackId: args.feedbackId,
+				content: args.content
+			});
 
-		await step.runMutation(internal.feedback.setFeedbackApproval, {
-			feedbackId: args.feedbackId,
-			approval: moderated.approval
-		});
+			await step.runMutation(internal.feedback.setFeedbackApproval, {
+				feedbackId: args.feedbackId,
+				approval: moderated.approval
+			});
 
-		if (moderated.approval === 'rejected') {
-			return;
+			if (moderated.approval === 'rejected') {
+				return;
+			}
 		}
 
 		const embedding = await step.runAction(internal.analysis.generateFeedbackEmbedding, {
