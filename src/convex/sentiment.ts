@@ -125,11 +125,13 @@ export const getSentimentChart = query({
 		}
 
 		return {
-			buckets,
 			granularity,
-			positive: buckets.map((b) => sentimentCounts.positive[b]),
-			negative: buckets.map((b) => sentimentCounts.negative[b]),
-			neutral: buckets.map((b) => sentimentCounts.neutral[b])
+			points: buckets.map((b) => ({
+				time: b,
+				positive: sentimentCounts.positive[b],
+				negative: sentimentCounts.negative[b],
+				neutral: sentimentCounts.neutral[b]
+			}))
 		};
 	}
 });
