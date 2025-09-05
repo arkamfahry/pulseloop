@@ -65,7 +65,7 @@ export const removeKeywords = internalMutation({
 	}
 });
 
-export const getTopicCloud = query({
+export const getKeywordCloud = query({
 	args: {
 		content: v.optional(v.string()),
 		sentiment: v.optional(

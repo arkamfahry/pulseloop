@@ -85,7 +85,7 @@ export const publishFeedback = internalMutation({
 		});
 
 		if (args.keywords && args.keywords.length > 0 && args.sentiment) {
-			await ctx.runMutation(internal.keywords.addKeywords, {
+			await ctx.runMutation(internal.keyword.addKeywords, {
 				keywords: args.keywords,
 				feedbackId: args.feedbackId
 			});
@@ -176,7 +176,7 @@ export const deleteFeedback = mutation({
 
 		await ctx.db.delete(feedback._id);
 		if (feedback.keywords && feedback.keywords.length > 0 && feedback.sentiment) {
-			await ctx.runMutation(internal.keywords.removeKeywords, {
+			await ctx.runMutation(internal.keyword.removeKeywords, {
 				keywords: feedback.keywords,
 				feedbackId: args.feedbackId
 			});
