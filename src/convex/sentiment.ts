@@ -104,7 +104,7 @@ export const getSentimentChart = query({
 			(feedbacks.length > 0 ? Math.min(...feedbacks.map((f) => f.createdAt)) : Date.now());
 		const to = args.to ?? Date.now();
 
-		const { buckets, bucketFn, granularity } = getTimeBuckets(from, to);
+		const { buckets, bucketFn, granularity, bucketRanges } = getTimeBuckets(from, to);
 
 		const sentimentCounts: Record<'positive' | 'negative' | 'neutral', Record<string, number>> = {
 			positive: {},
@@ -126,8 +126,10 @@ export const getSentimentChart = query({
 
 		return {
 			granularity,
-			points: buckets.map((b) => ({
+			points: buckets.map((b, i) => ({
 				time: b,
+				start: bucketRanges[i].start,
+				end: bucketRanges[i].end,
 				positive: sentimentCounts.positive[b],
 				negative: sentimentCounts.negative[b],
 				neutral: sentimentCounts.neutral[b]
@@ -139,7 +141,12 @@ export const getSentimentChart = query({
 function getTimeBuckets(
 	from: number,
 	to: number
-): { buckets: string[]; bucketFn: (ts: number) => string; granularity: 'month' | 'week' | 'day' } {
+): {
+	buckets: string[];
+	bucketFn: (ts: number) => string;
+	granularity: 'month' | 'week' | 'day';
+	bucketRanges: { start: number; end: number }[];
+} {
 	const MS_PER_DAY = 86400000;
 	const days = Math.ceil((to - from) / MS_PER_DAY);
 
@@ -153,6 +160,7 @@ function getTimeBuckets(
 	}
 
 	const buckets: string[] = [];
+	const bucketRanges: { start: number; end: number }[] = [];
 	let d = new Date(from);
 	let end = new Date(to);
 
@@ -160,7 +168,11 @@ function getTimeBuckets(
 		d = new Date(d.getFullYear(), d.getMonth(), 1);
 		end = new Date(end.getFullYear(), end.getMonth(), 1);
 		while (d <= end) {
-			buckets.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+			const start = d.getTime();
+			const next = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+			const bucketLabel = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+			buckets.push(bucketLabel);
+			bucketRanges.push({ start, end: next.getTime() - 1 });
 			d.setMonth(d.getMonth() + 1);
 		}
 		return {
@@ -169,17 +181,22 @@ function getTimeBuckets(
 				const date = new Date(ts);
 				return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 			},
-			granularity
+			granularity,
+			bucketRanges
 		};
 	} else if (granularity === 'week') {
 		d.setHours(0, 0, 0, 0);
 		while (d <= end) {
+			const start = d.getTime();
+			const next = new Date(d.getTime());
+			next.setDate(next.getDate() + 7);
 			const year = d.getFullYear();
 			const temp = new Date(d.getTime());
 			temp.setDate(temp.getDate() + 4 - (temp.getDay() || 7));
 			const week1 = new Date(temp.getFullYear(), 0, 1);
-			const week = Math.ceil(((temp.getTime() - week1.getTime()) / MS_PER_DAY + 1) / 7);
+			const week = Math.ceil(((temp.getTime() - week1.getTime()) / 86400000 + 1) / 7);
 			buckets.push(`${year}-W${String(week).padStart(2, '0')}`);
+			bucketRanges.push({ start, end: next.getTime() - 1 });
 			d.setDate(d.getDate() + 7);
 		}
 		return {
@@ -190,18 +207,23 @@ function getTimeBuckets(
 				const temp = new Date(date.getTime());
 				temp.setDate(temp.getDate() + 4 - (temp.getDay() || 7));
 				const week1 = new Date(temp.getFullYear(), 0, 1);
-				const week = Math.ceil(((temp.getTime() - week1.getTime()) / MS_PER_DAY + 1) / 7);
+				const week = Math.ceil(((temp.getTime() - week1.getTime()) / 86400000 + 1) / 7);
 				return `${year}-W${String(week).padStart(2, '0')}`;
 			},
-			granularity
+			granularity,
+			bucketRanges
 		};
 	} else {
 		d.setHours(0, 0, 0, 0);
 		end.setHours(0, 0, 0, 0);
 		while (d <= end) {
+			const start = d.getTime();
+			const next = new Date(d.getTime());
+			next.setDate(next.getDate() + 1);
 			buckets.push(
 				`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 			);
+			bucketRanges.push({ start, end: next.getTime() - 1 });
 			d.setDate(d.getDate() + 1);
 		}
 		return {
@@ -210,7 +232,8 @@ function getTimeBuckets(
 				const date = new Date(ts);
 				return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 			},
-			granularity
+			granularity,
+			bucketRanges
 		};
 	}
 }
