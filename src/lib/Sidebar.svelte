@@ -12,7 +12,9 @@
 		ChartPieOutline,
 		MessageDotsOutline,
 		ObjectsColumnOutline,
-		PaperPlaneOutline
+		PaperPlaneOutline,
+		LightbulbOutline,
+		FileLinesOutline
 	} from 'flowbite-svelte-icons';
 	import { page } from '$app/state';
 	import logo from '$lib/assets/favicon.svg';
@@ -61,15 +63,15 @@
 			{/snippet}
 		</SidebarItem>
 
-		<SidebarItem label="Topic" href="/dashboard/topic">
+		<SidebarItem label="Insight" href="/dashboard/insight">
 			{#snippet icon()}
-				<ObjectsColumnOutline class="h-5 w-5 text-gray-500 group-hover:text-gray-900" />
+				<LightbulbOutline class="h-5 w-5 text-gray-500 group-hover:text-gray-900" />
 			{/snippet}
 		</SidebarItem>
 
-		<SidebarItem label="Sentiment" href="/dashboard/sentiment">
+		<SidebarItem label="Summarize" href="/dashboard/summarize">
 			{#snippet icon()}
-				<ChartOutline class="h-5 w-5 text-gray-500 group-hover:text-gray-900" />
+				<FileLinesOutline class="h-5 w-5 text-gray-500 group-hover:text-gray-900" />
 			{/snippet}
 		</SidebarItem>
 
