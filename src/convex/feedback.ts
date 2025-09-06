@@ -192,29 +192,6 @@ export const getFeedbackById = query({
 	}
 });
 
-export const listPublishedFeedback = query({
-	args: {},
-	handler: async (ctx, args) => {
-		const feedbacks = await ctx.db
-			.query('feedbacks')
-			.withIndex('by_published_votes', (q) => q.eq('published', true))
-			.order('desc')
-			.collect();
-
-		const feedbacksWithUsers = await Promise.all(
-			feedbacks.map(async (feedback) => {
-				const user = await ctx.db.get(feedback.userId);
-				return { ...feedback, user };
-			})
-		);
-
-		return {
-			...feedbacks,
-			page: feedbacksWithUsers
-		};
-	}
-});
-
 export const getFeedbackByEmbeddingId = internalQuery({
 	args: { embeddingId: v.id('feedbackEmbeddings') },
 	handler: async (ctx, args) => {
@@ -227,13 +204,25 @@ export const getFeedbackByEmbeddingId = internalQuery({
 });
 
 export const listUnpublishedFeedback = query({
-	args: {},
+	args: {
+		content: v.optional(v.string())
+	},
 	handler: async (ctx, args) => {
-		const feedbacks = await ctx.db
-			.query('feedbacks')
-			.withIndex('by_published_votes', (q) => q.eq('published', false))
-			.order('desc')
-			.collect();
+		const tableQuery: QueryInitializer<DataModel['feedbacks']> = ctx.db.query('feedbacks');
+		let indexedQuery: Query<DataModel['feedbacks']> = tableQuery;
+		let orderedQuery: OrderedQuery<DataModel['feedbacks']> = indexedQuery;
+		let feedbacks: Array<Doc<'feedbacks'>> = [];
+
+		if (args.content) {
+			orderedQuery = tableQuery.withSearchIndex('by_content', (q) =>
+				q.search('content', args.content!).eq('published', false)
+			);
+		} else {
+			indexedQuery = tableQuery.withIndex('by_published_votes', (q) => q.eq('published', false));
+			orderedQuery = indexedQuery.order('desc');
+		}
+
+		feedbacks = await orderedQuery.collect();
 
 		const feedbacksWithUsers = await Promise.all(
 			feedbacks.map(async (feedback) => {
@@ -242,14 +231,11 @@ export const listUnpublishedFeedback = query({
 			})
 		);
 
-		return {
-			...feedbacks,
-			page: feedbacksWithUsers
-		};
+		return feedbacksWithUsers;
 	}
 });
 
-export const searchFeedback = query({
+export const listPublishedFeedback = query({
 	args: {
 		content: v.optional(v.string()),
 		sentiment: v.optional(
