@@ -57,7 +57,7 @@
 			{/snippet}
 		</SidebarItem>
 
-		<SidebarItem label="Feedback" href="/dashboard/feedback">
+		<SidebarItem label="Inbox" href="/dashboard/inbox">
 			{#snippet icon()}
 				<MessageDotsOutline class="h-5 w-5 text-gray-500 group-hover:text-gray-900" />
 			{/snippet}
@@ -66,12 +66,6 @@
 		<SidebarItem label="Insight" href="/dashboard/insight">
 			{#snippet icon()}
 				<LightbulbOutline class="h-5 w-5 text-gray-500 group-hover:text-gray-900" />
-			{/snippet}
-		</SidebarItem>
-
-		<SidebarItem label="Summarize" href="/dashboard/summarize">
-			{#snippet icon()}
-				<FileLinesOutline class="h-5 w-5 text-gray-500 group-hover:text-gray-900" />
 			{/snippet}
 		</SidebarItem>
 
