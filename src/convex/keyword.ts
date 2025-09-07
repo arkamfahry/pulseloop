@@ -9,28 +9,39 @@ export const addKeywords = internalMutation({
 		feedbackId: v.id('feedbacks')
 	},
 	handler: async (ctx, args) => {
-		for (const keyword of args.keywords) {
-			const existing = await ctx.db
-				.query('keywords')
-				.withIndex('by_keyword', (q) => q.eq('keyword', keyword))
-				.unique();
+		if (args.keywords.length === 0) return null;
 
-			if (!existing) {
-				const _id = await ctx.db.insert('keywords', {
-					keyword: keyword
-				});
+		await Promise.all(
+			args.keywords.map(async (keyword) => {
+				let existingKeyword = await ctx.db
+					.query('keywords')
+					.withIndex('by_keyword', (q) => q.eq('keyword', keyword))
+					.unique();
 
-				await ctx.db.insert('feedbackKeywords', {
-					feedbackId: args.feedbackId,
-					keywordId: _id
-				});
-			} else {
-				await ctx.db.insert('feedbackKeywords', {
-					feedbackId: args.feedbackId,
-					keywordId: existing._id
-				});
-			}
-		}
+				if (!existingKeyword) {
+					const _id = await ctx.db.insert('keywords', { keyword });
+					existingKeyword = await ctx.db.get(_id);
+				}
+
+				if (!existingKeyword) {
+					throw new Error('Failed to create or retrieve keyword');
+				}
+
+				const existingRelation = await ctx.db
+					.query('feedbackKeywords')
+					.withIndex('by_feedbackId_keywordId', (q) =>
+						q.eq('feedbackId', args.feedbackId).eq('keywordId', existingKeyword._id)
+					)
+					.unique();
+
+				if (!existingRelation) {
+					await ctx.db.insert('feedbackKeywords', {
+						feedbackId: args.feedbackId,
+						keywordId: existingKeyword._id
+					});
+				}
+			})
+		);
 	}
 });
 
@@ -39,29 +50,32 @@ export const removeKeywords = internalMutation({
 		keywords: v.array(v.string()),
 		feedbackId: v.id('feedbacks')
 	},
-	returns: v.null(),
 	handler: async (ctx, args) => {
-		for (const keyword of args.keywords) {
-			const existing = await ctx.db
-				.query('keywords')
-				.withIndex('by_keyword', (q) => q.eq('keyword', keyword))
-				.unique();
+		if (args.keywords.length === 0) return null;
 
-			if (!existing) {
-				continue;
-			}
+		await Promise.all(
+			args.keywords.map(async (keyword) => {
+				const existing = await ctx.db
+					.query('keywords')
+					.withIndex('by_keyword', (q) => q.eq('keyword', keyword))
+					.unique();
 
-			const feedbackKeyword = await ctx.db
-				.query('feedbackKeywords')
-				.withIndex('by_feedbackId_keywordId', (q) =>
-					q.eq('feedbackId', args.feedbackId).eq('keywordId', existing._id)
-				)
-				.unique();
+				if (!existing) {
+					return;
+				}
 
-			if (feedbackKeyword) {
-				await ctx.db.delete(feedbackKeyword._id);
-			}
-		}
+				const feedbackKeyword = await ctx.db
+					.query('feedbackKeywords')
+					.withIndex('by_feedbackId_keywordId', (q) =>
+						q.eq('feedbackId', args.feedbackId).eq('keywordId', existing._id)
+					)
+					.unique();
+
+				if (feedbackKeyword) {
+					await ctx.db.delete(feedbackKeyword._id);
+				}
+			})
+		);
 	}
 });
 
@@ -167,23 +181,27 @@ export const getKeywordCloud = query({
 			const feedbackKeywords: string[] = feedback.keywords ?? [];
 			const sentiment = feedback.sentiment as 'positive' | 'negative' | 'neutral' | undefined;
 
-			for (const keyword of feedbackKeywords) {
-				const keywordDoc = keywordLookup.get(keyword);
-				if (keywordDoc) {
-					if (!keywordMap[keyword]) {
-						keywordMap[keyword] = {
-							id: keywordDoc._id,
-							name: keywordDoc.keyword,
-							count: 0,
-							positive: 0,
-							negative: 0,
-							neutral: 0
-						};
-					}
-					keywordMap[keyword].count += 1;
-					if (sentiment === 'positive') keywordMap[keyword].positive += 1;
-					else if (sentiment === 'negative') keywordMap[keyword].negative += 1;
-					else if (sentiment === 'neutral') keywordMap[keyword].neutral += 1;
+			for (const feedbackKeyword of feedbackKeywords) {
+				const keyword = keywordLookup.get(feedbackKeyword);
+				if (!keyword) continue;
+
+				if (!keywordMap[feedbackKeyword]) {
+					keywordMap[feedbackKeyword] = {
+						id: keyword._id,
+						name: keyword.keyword,
+						count: 0,
+						positive: 0,
+						negative: 0,
+						neutral: 0
+					};
+				}
+				keywordMap[feedbackKeyword].count += 1;
+				if (sentiment === 'positive') {
+					keywordMap[feedbackKeyword].positive += 1;
+				} else if (sentiment === 'negative') {
+					keywordMap[feedbackKeyword].negative += 1;
+				} else if (sentiment === 'neutral') {
+					keywordMap[feedbackKeyword].neutral += 1;
 				}
 			}
 		}
