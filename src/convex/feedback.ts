@@ -56,11 +56,6 @@ export const setFeedbackApproval = internalMutation({
 			await ctx.db.patch(args.feedbackId, {
 				approval: args.approval
 			});
-
-			const feedback = await ctx.db.get(args.feedbackId);
-			if (!feedback) {
-				throw new Error('Feedback not found');
-			}
 		} else {
 			await ctx.db.patch(args.feedbackId, {
 				approval: args.approval
@@ -78,18 +73,20 @@ export const publishFeedback = internalMutation({
 		keywords: v.optional(v.array(v.string()))
 	},
 	handler: async (ctx, args) => {
+		if (!args.sentiment || !args.keywords || args.keywords.length === 0) {
+			throw new Error('sentiment and non-empty keywords are required to publish feedback');
+		}
+
 		await ctx.db.patch(args.feedbackId, {
 			sentiment: args.sentiment,
 			keywords: args.keywords,
 			published: true
 		});
 
-		if (args.keywords && args.keywords.length > 0 && args.sentiment) {
-			await ctx.runMutation(internal.keyword.addKeywords, {
-				keywords: args.keywords,
-				feedbackId: args.feedbackId
-			});
-		}
+		await ctx.runMutation(internal.keyword.addKeywords, {
+			keywords: args.keywords,
+			feedbackId: args.feedbackId
+		});
 	}
 });
 
@@ -175,12 +172,15 @@ export const deleteFeedback = mutation({
 		}
 
 		await ctx.db.delete(feedback._id);
-		if (feedback.keywords && feedback.keywords.length > 0 && feedback.sentiment) {
-			await ctx.runMutation(internal.keyword.removeKeywords, {
-				keywords: feedback.keywords,
-				feedbackId: args.feedbackId
-			});
+
+		if (!feedback.keywords?.length || !feedback.sentiment) {
+			return;
 		}
+
+		await ctx.runMutation(internal.keyword.removeKeywords, {
+			keywords: feedback.keywords,
+			feedbackId: args.feedbackId
+		});
 	}
 });
 
