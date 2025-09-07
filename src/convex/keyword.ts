@@ -1,7 +1,7 @@
 import { v } from 'convex/values';
 import { query, internalMutation } from './_generated/server';
 import { OrderedQuery, Query, QueryInitializer } from 'convex/server';
-import { DataModel, Doc, Id } from './_generated/dataModel';
+import { DataModel, Id } from './_generated/dataModel';
 
 export const addKeywords = internalMutation({
 	args: {
@@ -81,7 +81,6 @@ export const getKeywordCloud = query({
 		const tableQuery: QueryInitializer<DataModel['feedbacks']> = ctx.db.query('feedbacks');
 		let indexedQuery: Query<DataModel['feedbacks']> = tableQuery;
 		let orderedQuery: OrderedQuery<DataModel['feedbacks']> = indexedQuery;
-		let feedbacks: Array<Doc<'feedbacks'>> = [];
 
 		if (args.content) {
 			orderedQuery = tableQuery.withSearchIndex('by_content', (q) => {
@@ -102,14 +101,6 @@ export const getKeywordCloud = query({
 				orderedQuery = orderedQuery.filter((q) =>
 					q.and(q.gte(q.field('createdAt'), args.from!), q.lte(q.field('createdAt'), args.to!))
 				);
-			}
-
-			feedbacks = await orderedQuery.collect();
-
-			if (args.votes === 'asc') {
-				feedbacks = feedbacks.sort((a, b) => a.votes - b.votes);
-			} else {
-				feedbacks = feedbacks.sort((a, b) => b.votes - a.votes);
 			}
 		} else {
 			if (args.sentiment && args.status) {
@@ -157,8 +148,6 @@ export const getKeywordCloud = query({
 			} else {
 				orderedQuery = indexedQuery.order('desc');
 			}
-
-			feedbacks = await orderedQuery.collect();
 		}
 
 		type Keyword = {
@@ -174,7 +163,7 @@ export const getKeywordCloud = query({
 		const allKeywords = await ctx.db.query('keywords').collect();
 		const keywordLookup = new Map(allKeywords.map((t) => [t.keyword, t]));
 
-		for (const feedback of feedbacks) {
+		for await (const feedback of orderedQuery) {
 			const feedbackKeywords: string[] = feedback.keywords ?? [];
 			const sentiment = feedback.sentiment as 'positive' | 'negative' | 'neutral' | undefined;
 
