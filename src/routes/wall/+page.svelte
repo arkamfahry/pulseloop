@@ -10,7 +10,8 @@
 		ToolbarButton,
 		Card,
 		Checkbox,
-		Input
+		Input,
+		Label
 	} from 'flowbite-svelte';
 	import { CaretUpOutline, PaperPlaneOutline, SearchOutline } from 'flowbite-svelte-icons';
 	import { fade } from 'svelte/transition';
@@ -38,24 +39,10 @@
 	function toggle() {
 		hidden = !hidden;
 	}
-
-	function clickOutside(node: HTMLElement) {
-		const handleClick = (event: MouseEvent) => {
-			if (!node.contains(event.target as Node)) {
-				hidden = true;
-			}
-		};
-		document.addEventListener('mousedown', handleClick, true);
-		return {
-			destroy() {
-				document.removeEventListener('mousedown', handleClick, true);
-			}
-		};
-	}
 </script>
 
-<div class="my-15 flex min-h-screen flex-col bg-gray-50 dark:bg-gray-900">
-	<header class="fixed top-0 left-0 z-30 w-full bg-white shadow dark:bg-gray-900">
+<div class="flex min-h-screen flex-col bg-gray-50 dark:bg-gray-900">
+	<header class="sticky top-0 left-0 z-30 w-full bg-white shadow dark:bg-gray-900">
 		<Navbar>
 			<NavBrand href="/">
 				<img src={logo} class="mr-3 h-9 w-9" alt="PulseLoop" />
@@ -78,11 +65,11 @@
 	</header>
 
 	{#if !hidden}
-		<div class="fixed inset-0 z-20 flex items-start justify-center pt-15" transition:fade>
+		<div class="fixed inset-0 z-20 flex items-start justify-center pt-15 md:pt-28" transition:fade>
 			<Card class="mx-1 w-full max-w-3xl rounded-xl p-4 shadow-lg">
 				<Search size="md" placeholder="Search..." />
 
-				<div class="mt-4 flex justify-between gap-4 p-1">
+				<div class="mt-4 flex flex-wrap justify-between gap-4 p-1">
 					<div>
 						<div class="mb-2 font-semibold">Sentiment</div>
 						<div class="mb-2 flex gap-2">
@@ -113,7 +100,7 @@
 		</div>
 	{/if}
 
-	<main class="flex flex-1 flex-col items-center px-1 py-1">
+	<main class="flex flex-1 flex-col items-center px-1 py-2 md:py-4">
 		<div class="w-full max-w-3xl space-y-1">
 			<WallCard
 				userName="alice"
@@ -132,9 +119,10 @@
 	</main>
 
 	<footer
-		class="fixed bottom-0 left-0 z-50 w-full border-t border-gray-300 bg-white px-2 py-2 dark:bg-gray-900"
+		class="sticky bottom-0 left-0 z-50 w-full border-t border-gray-300 bg-white px-2 py-2 dark:bg-gray-900"
 	>
 		<form class="mx-auto flex max-w-3xl items-center gap-2">
+			<Label for="content" class="hidden">Your message</Label>
 			<Input
 				class="flex-1 rounded-lg border px-3 py-2 focus:outline-none"
 				type="text"
