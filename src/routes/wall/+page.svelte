@@ -11,9 +11,19 @@
 		Card,
 		Checkbox,
 		Input,
-		Label
+		Label,
+		Dropdown,
+		DropdownHeader,
+		DropdownGroup,
+		DropdownItem
 	} from 'flowbite-svelte';
-	import { CaretUpOutline, PaperPlaneOutline, SearchOutline } from 'flowbite-svelte-icons';
+	import {
+		CaretUpOutline,
+		PaperPlaneOutline,
+		SearchOutline,
+		ArrowRightToBracketOutline,
+		AlignJustifyOutline
+	} from 'flowbite-svelte-icons';
 	import { fade } from 'svelte/transition';
 	import logo from '$lib/assets/favicon.svg';
 	import { useAuth } from '@mmailaender/convex-better-auth-svelte/svelte';
@@ -50,22 +60,30 @@
 					>PulseLoop</span
 				>
 			</NavBrand>
-			<div class="flex md:order-2">
+			<div class="flex space-y-1 md:order-2">
 				<ToolbarButton class="block" onclick={toggle}>
 					<SearchOutline class="h-5 w-5 text-gray-500 dark:text-gray-400" />
 				</ToolbarButton>
-				<NavHamburger />
+				<ToolbarButton id="menu" class="block">
+					<AlignJustifyOutline class="h-5 w-5 text-gray-500 dark:text-gray-400" />
+				</ToolbarButton>
+				<Dropdown placement="bottom" triggeredBy="#menu">
+					<DropdownHeader>
+						<span class="block text-sm">Test</span>
+						<span class="block truncate text-sm font-medium">test@gmail.com</span>
+					</DropdownHeader>
+					<DropdownHeader>
+						{#if isAuthenticated}
+							<Button onclick={() => signOut()}>Sign out</Button>
+						{/if}
+					</DropdownHeader>
+				</Dropdown>
 			</div>
-			<NavUl>
-				{#if isAuthenticated}
-					<Button onclick={() => signOut()}>Sign out</Button>
-				{/if}
-			</NavUl>
 		</Navbar>
 	</header>
 
 	{#if !hidden}
-		<div class="fixed inset-0 z-20 flex items-start justify-center pt-15 md:pt-28" transition:fade>
+		<div class="fixed inset-0 z-20 flex items-start justify-center pt-15" transition:fade>
 			<Card class="mx-1 w-full max-w-3xl rounded-xl p-4 shadow-lg">
 				<Search size="md" placeholder="Search..." />
 
