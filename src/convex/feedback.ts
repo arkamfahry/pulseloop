@@ -340,3 +340,55 @@ export const listPublishedFeedback = query({
 		return feedbacksWithUsers;
 	}
 });
+
+export const listPublishedFeedbackByKeywordId = query({
+	args: {
+		keywordId: v.id('keywords'),
+		sentiment: v.optional(
+			v.union(v.literal('positive'), v.literal('negative'), v.literal('neutral'))
+		),
+		status: v.optional(v.union(v.literal('open'), v.literal('noted'))),
+		from: v.optional(v.number()),
+		to: v.optional(v.number()),
+		votes: v.optional(v.union(v.literal('asc'), v.literal('desc')))
+	},
+	handler: async (ctx, args) => {
+		const feedbackKeywords = await ctx.db
+			.query('feedbackKeywords')
+			.withIndex('by_keywordId', (q) => q.eq('keywordId', args.keywordId))
+			.collect();
+
+		let feedbacks = await Promise.all(
+			feedbackKeywords.map(async (feedbackKeyword) => {
+				const feedback = await ctx.db.get(feedbackKeyword.feedbackId);
+				return feedback;
+			})
+		);
+
+		if (args.sentiment) {
+			feedbacks = feedbacks.filter((fb) => fb?.sentiment === args.sentiment);
+		}
+
+		if (args.status) {
+			feedbacks = feedbacks.filter((fb) => fb?.status === args.status);
+		}
+
+		if (args.from && args.to) {
+			feedbacks = feedbacks.filter(
+				(fb) => fb && fb.createdAt >= args.from! && fb.createdAt <= args.to!
+			);
+		}
+
+		const feedbacksWithUsers = await Promise.all(
+			feedbacks.map(async (feedback) => {
+				if (!feedback) {
+					return;
+				}
+				const user = await ctx.db.get(feedback.userId);
+				return { ...feedback, user };
+			})
+		);
+
+		return feedbacksWithUsers;
+	}
+});
