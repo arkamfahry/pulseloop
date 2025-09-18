@@ -12,9 +12,9 @@
 	let props: Props = $props();
 
 	function sentimentColor(sentiment?: string) {
-		if (sentiment === 'positive') return 'text-green-700';
-		if (sentiment === 'negative') return 'text-red-700';
-		return 'text-gray-700';
+		if (sentiment === 'positive') return 'text-green-800';
+		if (sentiment === 'negative') return 'text-red-800';
+		return 'text-blue-800';
 	}
 </script>
 
