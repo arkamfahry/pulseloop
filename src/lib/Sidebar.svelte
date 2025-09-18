@@ -8,13 +8,10 @@
 		SidebarBrand
 	} from 'flowbite-svelte';
 	import {
-		ChartOutline,
 		ChartPieOutline,
 		MessageDotsOutline,
-		ObjectsColumnOutline,
 		PaperPlaneOutline,
-		LightbulbOutline,
-		FileLinesOutline
+		LightbulbOutline
 	} from 'flowbite-svelte-icons';
 	import { page } from '$app/state';
 	import logo from '$lib/assets/favicon.svg';
