@@ -93,7 +93,7 @@
 						<div class="mb-2 font-semibold">Sentiment</div>
 						<div class="mb-2 flex gap-2">
 							<Button color="red" outline size="xs" class="p-1">Negative</Button>
-							<Button color="yellow" outline size="xs" class="p-1">Neutral</Button>
+							<Button color="blue" outline size="xs" class="p-1">Neutral</Button>
 							<Button color="green" outline size="xs" class="p-1">Positive</Button>
 						</div>
 

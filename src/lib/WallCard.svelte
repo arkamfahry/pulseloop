@@ -26,7 +26,7 @@
 				return 'red';
 			case 'neutral':
 			default:
-				return 'yellow';
+				return 'blue';
 		}
 	}
 </script>
