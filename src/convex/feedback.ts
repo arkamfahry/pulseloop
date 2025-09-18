@@ -392,3 +392,21 @@ export const listPublishedFeedbackByKeywordId = query({
 		return feedbacksWithUsers;
 	}
 });
+
+export const getTotalFeedbackCount = query({
+	handler: async (ctx) => {
+		const feedbacks = await ctx.db.query('feedbacks').collect();
+		return feedbacks.length;
+	}
+});
+
+export const getOpenFeedbackCount = query({
+	handler: async (ctx) => {
+		const feedbacks = await ctx.db
+			.query('feedbacks')
+			.withIndex('by_status', (q) => q.eq('status', 'open'))
+			.collect();
+
+		return feedbacks.length;
+	}
+});
