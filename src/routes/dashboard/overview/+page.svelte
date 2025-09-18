@@ -1,11 +1,37 @@
 <script lang="ts">
 	import TrendCard from '$lib/TrendCard.svelte';
 	import SentimentTrendCard from '$lib/SentimentTrendCard.svelte';
-	import { Spinner } from 'flowbite-svelte';
-	import { PieChart } from 'layerchart';
 	import { useQuery } from 'convex-svelte';
 	import { api } from '$convex/_generated/api';
 	import SentimentPieChart from '$lib/SentimentPieChart.svelte';
+	import { SvelteFlow, Controls } from '@xyflow/svelte';
+	import '@xyflow/svelte/dist/style.css';
+	import CustomNode from '$lib/CustomNode.svelte';
+
+	let nodes = $state.raw([
+		{
+			id: '1',
+			type: 'custom',
+			position: { x: 0, y: 0 },
+			data: { keyword: 'MC Exam', sentiment: 'negative' }
+		},
+		{
+			id: '2',
+			type: 'custom',
+			position: { x: 100, y: 100 },
+			data: { keyword: 'Hackathon', sentiment: 'positive' }
+		},
+		{
+			id: '3',
+			type: 'custom',
+			position: { x: 200, y: 200 },
+			data: { keyword: 'ECS Exam', sentiment: 'neutral' }
+		}
+	]);
+
+	const nodeTypes = {
+		custom: CustomNode
+	};
 
 	const totalFeedbackCountQuery = useQuery(api.feedback.getTotalFeedbackCount, {});
 	const openFeedbackCountQuery = useQuery(api.feedback.getOpenFeedbackCount, {});
@@ -47,21 +73,11 @@
 		<div class="col-span-6 flex min-h-48 flex-col justify-start rounded-2xl bg-white p-8 shadow-sm">
 			<div class="mb-3 text-lg font-semibold">Trends</div>
 			<div class="flex flex-wrap gap-2.5">
-				<span class="rounded-xl bg-gray-100 px-6 py-2 text-base font-medium text-red-700"
-					>Cafeteria</span
-				>
-				<span class="rounded-xl bg-gray-100 px-6 py-2 text-base font-medium text-red-700"
-					>Learning Portal</span
-				>
-				<span class="rounded-xl bg-gray-100 px-6 py-2 text-base font-medium text-red-700"
-					>MC Exam</span
-				>
-				<span class="rounded-xl bg-gray-100 px-6 py-2 text-base font-medium text-red-700"
-					>ECS Course</span
-				>
-				<span class="rounded-xl bg-emerald-50 px-6 py-2 text-base font-medium text-emerald-600"
-					>Hackathon</span
-				>
+				<div style:width="100vw" style:height="40vh">
+					<SvelteFlow bind:nodes {nodeTypes}>
+						<Controls />
+					</SvelteFlow>
+				</div>
 			</div>
 		</div>
 	</section>
