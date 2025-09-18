@@ -22,6 +22,7 @@ export default defineSchema({
 		embeddingId: v.optional(v.id('feedbackEmbeddings')),
 		createdAt: v.number()
 	})
+		.index('by_status', ['status'])
 		.index('by_embeddingId', ['embeddingId'])
 		.index('by_userId_votes', ['userId', 'votes'])
 		.index('by_published_votes', ['published', 'votes'])
