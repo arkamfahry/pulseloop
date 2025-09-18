@@ -7,6 +7,7 @@
 	import { SvelteFlow, Controls } from '@xyflow/svelte';
 	import '@xyflow/svelte/dist/style.css';
 	import CustomNode from '$lib/CustomNode.svelte';
+	import TrendChart from '$lib/TrendChart.svelte';
 
 	let nodes = $state.raw([
 		{
@@ -73,11 +74,7 @@
 		<div class="col-span-6 flex min-h-48 flex-col justify-start rounded-2xl bg-white p-8 shadow-sm">
 			<div class="mb-3 text-lg font-semibold">Trends</div>
 			<div class="flex flex-wrap gap-2.5">
-				<div style:width="100vw" style:height="40vh">
-					<SvelteFlow bind:nodes {nodeTypes}>
-						<Controls />
-					</SvelteFlow>
-				</div>
+				<TrendChart />
 			</div>
 		</div>
 	</section>
