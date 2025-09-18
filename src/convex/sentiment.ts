@@ -1,18 +1,17 @@
 import { query } from './_generated/server';
 
 export type SentimentCounts = {
-	positive: number;
-	negative: number;
-	neutral: number;
-	total: number;
+	values: {
+		sentiment: string;
+		count: number;
+	}[];
 };
 
-export const getSentiments = query({
+export const getSentimentsCounts = query({
 	handler: async (ctx): Promise<SentimentCounts> => {
 		let positive = 0;
 		let negative = 0;
 		let neutral = 0;
-		let total = 0;
 
 		for await (const feedback of ctx.db
 			.query('feedbacks')
@@ -24,10 +23,15 @@ export const getSentiments = query({
 			} else if (feedback.sentiment === 'neutral') {
 				neutral++;
 			}
-			total++;
 		}
 
-		return { positive, negative, neutral, total };
+		return {
+			values: [
+				{ sentiment: 'positive', count: positive },
+				{ sentiment: 'negative', count: negative },
+				{ sentiment: 'neutral', count: neutral }
+			]
+		};
 	}
 });
 
