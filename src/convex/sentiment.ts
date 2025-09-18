@@ -1,14 +1,7 @@
 import { query } from './_generated/server';
 
-export type SentimentCounts = {
-	values: {
-		sentiment: string;
-		count: number;
-	}[];
-};
-
 export const getSentimentsCounts = query({
-	handler: async (ctx): Promise<SentimentCounts> => {
+	handler: async (ctx) => {
 		let positive = 0;
 		let negative = 0;
 		let neutral = 0;
@@ -35,13 +28,8 @@ export const getSentimentsCounts = query({
 	}
 });
 
-export type OverallSentiment = {
-	sentiment: 'positive' | 'negative' | 'neutral';
-	percentage: number;
-};
-
 export const getOverallSentiment = query({
-	handler: async (ctx): Promise<OverallSentiment> => {
+	handler: async (ctx) => {
 		let positive = 0;
 		let negative = 0;
 		let neutral = 0;
