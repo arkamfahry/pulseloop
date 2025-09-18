@@ -4,8 +4,6 @@
 		Navbar,
 		NavBrand,
 		Button,
-		NavUl,
-		NavHamburger,
 		Search,
 		ToolbarButton,
 		Card,
@@ -14,8 +12,7 @@
 		Label,
 		Dropdown,
 		DropdownHeader,
-		DropdownGroup,
-		DropdownItem
+		Spinner
 	} from 'flowbite-svelte';
 	import {
 		CaretUpOutline,
@@ -52,7 +49,7 @@
 		hidden = !hidden;
 	}
 
-	const query = useQuery(api.feedback.listPublishedFeedback, {});
+	const publishedFeedbackQuery = useQuery(api.feedback.listPublishedFeedback, {});
 </script>
 
 <div class="flex min-h-screen flex-col bg-gray-50 dark:bg-gray-900">
@@ -124,12 +121,14 @@
 
 	<main class="flex flex-1 flex-col items-center px-1 py-2 md:py-4">
 		<div class="w-full max-w-3xl space-y-1">
-			{#if query.isLoading}
-				<p>Loading...</p>
-			{:else if query.error}
-				<p>Error: {query.error.message}</p>
+			{#if publishedFeedbackQuery.isLoading}
+				<div class="flex h-screen items-center justify-center">
+					<Spinner />
+				</div>
+			{:else if publishedFeedbackQuery.error}
+				<p>Error: {publishedFeedbackQuery.error.message}</p>
 			{:else}
-				{#each query.data as feedback}
+				{#each publishedFeedbackQuery.data as feedback}
 					<WallCard
 						userName={feedback.user?.name ?? 'Anonymous'}
 						date={new Date(feedback.createdAt).toLocaleDateString(undefined, {
