@@ -30,6 +30,8 @@
 	import { authClient } from '$lib/auth-client';
 	import { goto } from '$app/navigation';
 	import WallCard from '$lib/WallCard.svelte';
+	import { useQuery } from 'convex-svelte';
+	import { api } from '$convex/_generated/api';
 
 	const isAuthenticated = $derived(useAuth().isAuthenticated);
 
@@ -49,6 +51,8 @@
 	function toggle() {
 		hidden = !hidden;
 	}
+
+	const query = useQuery(api.feedback.listPublishedFeedback, {});
 </script>
 
 <div class="flex min-h-screen flex-col bg-gray-50 dark:bg-gray-900">
@@ -120,19 +124,27 @@
 
 	<main class="flex flex-1 flex-col items-center px-1 py-2 md:py-4">
 		<div class="w-full max-w-3xl space-y-1">
-			<WallCard
-				userName="alice"
-				date={new Date(Date.now()).toLocaleDateString(undefined, {
-					year: 'numeric',
-					month: 'short',
-					day: 'numeric'
-				})}
-				content="orem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum"
-				keywords={['UI', 'UX']}
-				status="open"
-				sentiment="positive"
-				votes={0}
-			/>
+			{#if query.isLoading}
+				<p>Loading...</p>
+			{:else if query.error}
+				<p>Error: {query.error.message}</p>
+			{:else}
+				{#each query.data as feedback}
+					<WallCard
+						userName={feedback.user?.name ?? 'Anonymous'}
+						date={new Date(feedback.createdAt).toLocaleDateString(undefined, {
+							year: 'numeric',
+							month: 'short',
+							day: 'numeric'
+						})}
+						content={feedback.content ?? ''}
+						keywords={feedback.keywords ?? []}
+						status={feedback.status ?? 'open'}
+						sentiment={feedback.sentiment ?? 'neutral'}
+						votes={feedback.votes ?? 0}
+					/>
+				{/each}
+			{/if}
 		</div>
 	</main>
 
