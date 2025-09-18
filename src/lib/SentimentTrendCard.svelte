@@ -7,9 +7,9 @@
 	export let content: OverallSentiment | null | undefined;
 
 	function sentimentColor(sentiment?: string) {
-		if (sentiment === 'positive') return 'text-green-400';
-		if (sentiment === 'negative') return 'text-red-400';
-		return 'text-gray-400';
+		if (sentiment === 'positive') return 'text-green-700';
+		if (sentiment === 'negative') return 'text-red-700';
+		return 'text-gray-700';
 	}
 </script>
 
