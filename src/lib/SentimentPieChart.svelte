@@ -25,7 +25,7 @@
 			key="sentiment"
 			value="count"
 			cRange={['var(--color-success)', 'var(--color-danger)', 'var(--color-info)']}
-			innerRadius={-30}
+			innerRadius={-40}
 			cornerRadius={5}
 			padAngle={0.02}
 			padding={{ right: 48 }}
