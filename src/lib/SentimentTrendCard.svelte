@@ -5,7 +5,8 @@
 	interface Props {
 		isLoading: boolean;
 		heading: string;
-		content: OverallSentiment | null | undefined;
+		data: OverallSentiment | null | undefined;
+		error?: Error | null;
 	}
 
 	let props: Props = $props();
@@ -22,12 +23,16 @@
 		<div class="flex h-full flex-1 items-center justify-center">
 			<Spinner />
 		</div>
+	{:else if props.error}
+		<div class="flex h-full flex-1 items-center justify-center text-red-600">
+			Error: {props.error.message}
+		</div>
 	{:else}
 		<span class="text-2xl font-medium text-gray-500">{props.heading}</span>
-		<span class="mt-1 text-4xl font-semibold {sentimentColor(props.content?.sentiment)}">
-			{#if props.content}
-				{props.content.percentage}% {props.content.sentiment.charAt(0).toUpperCase() +
-					props.content.sentiment.slice(1)}
+		<span class="mt-1 text-4xl font-semibold {sentimentColor(props.data?.sentiment)}">
+			{#if props.data}
+				{props.data.percentage}% {props.data.sentiment.charAt(0).toUpperCase() +
+					props.data.sentiment.slice(1)}
 			{:else}
 				0% Neutral
 			{/if}
