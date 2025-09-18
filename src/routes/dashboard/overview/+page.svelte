@@ -29,7 +29,7 @@
 	</section>
 
 	<section class="grid grid-cols-10 gap-6">
-		<div class="col-span-3 flex min-h-48 flex-col justify-start rounded-2xl bg-white p-8 shadow-sm">
+		<div class="col-span-4 flex min-h-48 flex-col justify-start rounded-2xl bg-white p-8 shadow-sm">
 			<div class="mb-3 text-lg font-semibold">Sentiment</div>
 			<div
 				class="mb-3 flex h-32 w-full items-center justify-center rounded-full bg-gray-100 text-base text-gray-400"
@@ -57,7 +57,7 @@
 				</li>
 			</ul>
 		</div>
-		<div class="col-span-7 flex min-h-48 flex-col justify-start rounded-2xl bg-white p-8 shadow-sm">
+		<div class="col-span-6 flex min-h-48 flex-col justify-start rounded-2xl bg-white p-8 shadow-sm">
 			<div class="mb-3 text-lg font-semibold">Trends</div>
 			<div class="flex flex-wrap gap-2.5">
 				<span class="rounded-xl bg-gray-100 px-6 py-2 text-base font-medium text-red-700"
