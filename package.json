@@ -50,6 +50,7 @@
 	"dependencies": {
 		"@convex-dev/aggregate": "^0.1.23",
 		"@convex-dev/better-auth": "^0.7.17",
+		"@convex-dev/sharded-counter": "^0.1.8",
 		"@convex-dev/workflow": "^0.2.6",
 		"@google/genai": "^1.14.0",
 		"@mmailaender/convex-better-auth-svelte": "^0.0.4",
