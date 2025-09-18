@@ -1,11 +1,12 @@
 <script lang="ts">
-	import type { SentimentCounts } from '$convex/sentiment';
+	import type { api } from '$convex/_generated/api';
+	import type { FunctionReturnType } from 'convex/server';
 	import { Spinner } from 'flowbite-svelte';
 	import { PieChart } from 'layerchart';
 
 	interface Props {
 		isLoading: boolean;
-		data: SentimentCounts | null | undefined;
+		data: FunctionReturnType<typeof api.sentiment.getSentimentsCounts> | null | undefined;
 		error?: Error | null;
 	}
 

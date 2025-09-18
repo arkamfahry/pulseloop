@@ -1,11 +1,12 @@
 <script lang="ts">
-	import type { OverallSentiment } from '$convex/sentiment';
+	import type { api } from '$convex/_generated/api';
+	import type { FunctionReturnType } from 'convex/server';
 	import { Card, Spinner } from 'flowbite-svelte';
 
 	interface Props {
 		isLoading: boolean;
 		heading: string;
-		data: OverallSentiment | null | undefined;
+		data: FunctionReturnType<typeof api.sentiment.getOverallSentiment> | null | undefined;
 		error?: Error | null;
 	}
 
