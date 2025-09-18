@@ -2,6 +2,8 @@
 @plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
 @plugin 'flowbite/plugin';
+@source '../node_modules/layerchart/dist';
+@import '@layerstack/tailwind/core.css';
 
 @custom-variant dark (&:where(.dark, .dark *));
 
