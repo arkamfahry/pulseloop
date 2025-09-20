@@ -5,24 +5,26 @@
 	import { PieChart } from 'layerchart';
 
 	interface Props {
-		isLoading: boolean;
-		data: FunctionReturnType<typeof api.sentiment.getSentimentsCounts> | null | undefined;
-		error?: Error | null;
+		query: {
+			isLoading: boolean;
+			data: FunctionReturnType<typeof api.sentiment.getSentimentsCounts> | null | undefined;
+			error?: Error | null;
+		};
 	}
 
 	let props: Props = $props();
 </script>
 
 <div class="h-72 overflow-auto rounded-sm">
-	{#if props.isLoading}
+	{#if props.query.isLoading}
 		<div class="flex h-full flex-1 items-center justify-center">
 			<Spinner />
 		</div>
-	{:else if props.error}
-		<div>Error: {props.error.message}</div>
+	{:else if props.query.error}
+		<div>Error: {props.query.error.message}</div>
 	{:else}
 		<PieChart
-			data={props.data?.values ?? []}
+			data={props.query.data?.values ?? []}
 			key="sentiment"
 			value="count"
 			cRange={['var(--color-success)', 'var(--color-danger)', 'var(--color-info)']}

@@ -5,10 +5,12 @@
 	import { Card, Spinner } from 'flowbite-svelte';
 
 	interface Props {
-		isLoading: boolean;
 		heading: string;
-		data: FunctionReturnType<typeof api.sentiment.getOverallSentiment> | null | undefined;
-		error?: Error | null;
+		query: {
+			isLoading: boolean;
+			data: FunctionReturnType<typeof api.sentiment.getOverallSentiment> | null | undefined;
+			error?: Error | null;
+		};
 	}
 
 	let props: Props = $props();
@@ -21,20 +23,20 @@
 </script>
 
 <Card class="flex min-h-24 flex-col justify-center gap-1.5 rounded-2xl p-6 text-lg shadow-sm">
-	{#if props.isLoading}
+	{#if props.query.isLoading}
 		<div class="flex h-full flex-1 items-center justify-center">
 			<Spinner />
 		</div>
-	{:else if props.error}
+	{:else if props.query.error}
 		<div class="flex h-full flex-1 items-center justify-center text-red-600">
-			Error: {props.error.message}
+			Error: {props.query.error.message}
 		</div>
 	{:else}
 		<span class="text-2xl font-medium text-gray-500">{props.heading}</span>
-		<span class="mt-1 text-4xl font-semibold {sentimentColor(props.data?.sentiment)}">
-			{#if props.data}
-				{props.data.percentage}% {props.data.sentiment.charAt(0).toUpperCase() +
-					props.data.sentiment.slice(1)}
+		<span class="mt-1 text-4xl font-semibold {sentimentColor(props.query.data?.sentiment)}">
+			{#if props.query.data}
+				{props.query.data.percentage}% {props.query.data.sentiment.charAt(0).toUpperCase() +
+					props.query.data.sentiment.slice(1)}
 			{:else}
 				0% Neutral
 			{/if}

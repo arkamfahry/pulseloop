@@ -1,79 +1,35 @@
 <script lang="ts">
 	import { api } from '$convex/_generated/api';
-	import CustomNode from '$lib/CustomNode.svelte';
-	import SentimentPieChart from '$lib/SentimentPieChart.svelte';
-	import SentimentTrendCard from '$lib/SentimentTrendCard.svelte';
-	import TrendCard from '$lib/TrendCard.svelte';
-	import TrendChart from '$lib/TrendChart.svelte';
+	import SentimentDistributionChart from '$lib/kpi/SentimentDistributionChart.svelte';
+	import SentimentTrendCard from '$lib/kpi/SentimentTrendCard.svelte';
+	import TrendCard from '$lib/kpi/TrendCard.svelte';
+	import TrendChart from '$lib/kpi/WordCloudTrendChart.svelte';
 	import '@xyflow/svelte/dist/style.css';
 	import { useQuery } from 'convex-svelte';
-
-	let nodes = $state.raw([
-		{
-			id: '1',
-			type: 'custom',
-			position: { x: 0, y: 0 },
-			data: { keyword: 'MC Exam', sentiment: 'negative' }
-		},
-		{
-			id: '2',
-			type: 'custom',
-			position: { x: 100, y: 100 },
-			data: { keyword: 'Hackathon', sentiment: 'positive' }
-		},
-		{
-			id: '3',
-			type: 'custom',
-			position: { x: 200, y: 200 },
-			data: { keyword: 'ECS Exam', sentiment: 'neutral' }
-		}
-	]);
-
-	const nodeTypes = {
-		custom: CustomNode
-	};
 
 	const totalFeedbackCountQuery = useQuery(api.feedback.getTotalFeedbackCount, {});
 	const openFeedbackCountQuery = useQuery(api.feedback.getOpenFeedbackCount, {});
 	const overallSentimentQuery = useQuery(api.sentiment.getOverallSentiment, {});
 	const sentimentCountsQuery = useQuery(api.sentiment.getSentimentsCounts, {});
+	const keywordCloudQuery = useQuery(api.keyword.getKeywordCloud, {});
 </script>
 
 <main class="flex min-w-0 flex-col gap-6">
 	<section class="grid grid-cols-3 gap-6">
-		<TrendCard
-			heading="Total Feedback"
-			isLoading={totalFeedbackCountQuery.isLoading}
-			error={totalFeedbackCountQuery.error}
-			data={totalFeedbackCountQuery.data}
-		/>
-		<TrendCard
-			heading="Open Feedback"
-			isLoading={openFeedbackCountQuery.isLoading}
-			error={openFeedbackCountQuery.error}
-			data={openFeedbackCountQuery.data}
-		/>
-		<SentimentTrendCard
-			heading="Overall Sentiment"
-			isLoading={overallSentimentQuery.isLoading}
-			error={overallSentimentQuery.error}
-			data={overallSentimentQuery.data}
-		/>
+		<TrendCard heading="Total Feedback" query={totalFeedbackCountQuery} />
+		<TrendCard heading="Open Feedback" query={openFeedbackCountQuery} />
+		<SentimentTrendCard heading="Overall Sentiment" query={overallSentimentQuery} />
 	</section>
 
 	<section class="grid grid-cols-10 gap-6">
 		<div class="col-span-4 flex min-h-48 flex-col justify-start rounded-2xl bg-white p-8 shadow-sm">
 			<div class="mb-3 text-lg font-semibold">Sentiment</div>
-			<SentimentPieChart
-				data={sentimentCountsQuery.data}
-				isLoading={sentimentCountsQuery.isLoading}
-				error={sentimentCountsQuery.error}
-			/>
+			<SentimentDistributionChart query={sentimentCountsQuery} />
 		</div>
 		<div class="col-span-6 flex min-h-48 flex-col justify-start rounded-2xl bg-white p-8 shadow-sm">
 			<div class="mb-3 text-lg font-semibold">Trends</div>
 			<div class="flex flex-wrap gap-2.5">
-				<TrendChart />
+				<TrendChart query={keywordCloudQuery} />
 			</div>
 		</div>
 	</section>
