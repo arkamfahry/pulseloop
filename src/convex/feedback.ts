@@ -47,74 +47,6 @@ export const submitFeedback = mutation({
 	}
 });
 
-export const setFeedbackApproval = internalMutation({
-	args: {
-		feedbackId: v.id('feedbacks'),
-		approval: v.union(v.literal('approved'), v.literal('rejected'))
-	},
-	handler: async (ctx, args) => {
-		if (args.approval === 'approved') {
-			await ctx.db.patch(args.feedbackId, {
-				approval: args.approval
-			});
-		} else {
-			await ctx.db.patch(args.feedbackId, {
-				approval: args.approval
-			});
-		}
-	}
-});
-
-export const publishFeedback = internalMutation({
-	args: {
-		feedbackId: v.id('feedbacks'),
-		sentiment: v.optional(
-			v.union(v.literal('positive'), v.literal('negative'), v.literal('neutral'))
-		),
-		keywords: v.optional(v.array(v.string()))
-	},
-	handler: async (ctx, args) => {
-		if (!args.sentiment || !args.keywords || args.keywords.length === 0) {
-			throw new Error('sentiment and non-empty keywords are required to publish feedback');
-		}
-
-		await ctx.db.patch(args.feedbackId, {
-			sentiment: args.sentiment,
-			keywords: args.keywords,
-			published: true
-		});
-
-		await ctx.runMutation(internal.keyword.addKeywords, {
-			keywords: args.keywords,
-			feedbackId: args.feedbackId
-		});
-	}
-});
-
-export const attachFeedbackEmbedding = internalMutation({
-	args: {
-		feedbackId: v.id('feedbacks'),
-		embedding: v.array(v.number())
-	},
-	handler: async (ctx, args) => {
-		const feedback = await ctx.db.get(args.feedbackId);
-		if (!feedback) {
-			throw new Error('Feedback not found');
-		}
-
-		const embeddingId = await ctx.db.insert('feedbackEmbeddings', {
-			userId: feedback.userId,
-			embedding: args.embedding,
-			sentiment: feedback.sentiment,
-			keywords: feedback.keywords
-		});
-
-		await ctx.db.patch(args.feedbackId, {
-			embeddingId: embeddingId
-		});
-	}
-});
-
 export const toggleFeedbackVote = mutation({
 	args: {
 		feedbackId: v.id('feedbacks')
@@ -185,21 +117,78 @@ export const deleteFeedback = mutation({
 	}
 });
 
+export const setFeedbackApproval = internalMutation({
+	args: {
+		feedbackId: v.id('feedbacks'),
+		approval: v.union(v.literal('approved'), v.literal('rejected'))
+	},
+	handler: async (ctx, args) => {
+		if (args.approval === 'approved') {
+			await ctx.db.patch(args.feedbackId, {
+				approval: args.approval
+			});
+		} else {
+			await ctx.db.patch(args.feedbackId, {
+				approval: args.approval
+			});
+		}
+	}
+});
+
+export const publishFeedback = internalMutation({
+	args: {
+		feedbackId: v.id('feedbacks'),
+		sentiment: v.optional(
+			v.union(v.literal('positive'), v.literal('negative'), v.literal('neutral'))
+		),
+		keywords: v.optional(v.array(v.string()))
+	},
+	handler: async (ctx, args) => {
+		if (!args.sentiment || !args.keywords || args.keywords.length === 0) {
+			throw new Error('sentiment and non-empty keywords are required to publish feedback');
+		}
+
+		await ctx.db.patch(args.feedbackId, {
+			sentiment: args.sentiment,
+			keywords: args.keywords,
+			published: true
+		});
+
+		await ctx.runMutation(internal.keyword.addKeywords, {
+			keywords: args.keywords,
+			feedbackId: args.feedbackId
+		});
+	}
+});
+
+export const attachFeedbackEmbedding = internalMutation({
+	args: {
+		feedbackId: v.id('feedbacks'),
+		embedding: v.array(v.number())
+	},
+	handler: async (ctx, args) => {
+		const feedback = await ctx.db.get(args.feedbackId);
+		if (!feedback) {
+			throw new Error('Feedback not found');
+		}
+
+		const embeddingId = await ctx.db.insert('feedbackEmbeddings', {
+			userId: feedback.userId,
+			embedding: args.embedding,
+			sentiment: feedback.sentiment,
+			keywords: feedback.keywords
+		});
+
+		await ctx.db.patch(args.feedbackId, {
+			embeddingId: embeddingId
+		});
+	}
+});
+
 export const getFeedbackById = query({
 	args: { feedbackId: v.id('feedbacks') },
 	handler: async (ctx, args) => {
 		const feedback = await ctx.db.get(args.feedbackId);
-		return feedback;
-	}
-});
-
-export const getFeedbackByEmbeddingId = internalQuery({
-	args: { embeddingId: v.id('feedbackEmbeddings') },
-	handler: async (ctx, args) => {
-		const feedback = await ctx.db
-			.query('feedbacks')
-			.withIndex('by_embeddingId', (q) => q.eq('embeddingId', args.embeddingId))
-			.first();
 		return feedback;
 	}
 });
@@ -412,6 +401,17 @@ export const listPublishedFeedbackByUserId = query({
 			})
 		);
 		return feedbacksWithUsers;
+	}
+});
+
+export const getFeedbackByEmbeddingId = internalQuery({
+	args: { embeddingId: v.id('feedbackEmbeddings') },
+	handler: async (ctx, args) => {
+		const feedback = await ctx.db
+			.query('feedbacks')
+			.withIndex('by_embeddingId', (q) => q.eq('embeddingId', args.embeddingId))
+			.first();
+		return feedback;
 	}
 });
 
