@@ -36,7 +36,6 @@ export const { createUser, updateUser, deleteUser, createSession, isAuthenticate
 	});
 
 export const getCurrentUser = query({
-	args: {},
 	handler: async (ctx) => {
 		const userMetadata = await betterAuthComponent.getAuthUser(ctx);
 		if (!userMetadata) {
@@ -44,6 +43,7 @@ export const getCurrentUser = query({
 		}
 
 		const user = await ctx.db.get(userMetadata.userId as Id<'users'>);
+
 		return {
 			...user,
 			...userMetadata
