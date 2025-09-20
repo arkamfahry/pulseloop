@@ -107,6 +107,20 @@ export const approveFeedback = mutation({
 		await ctx.db.patch(feedback._id, {
 			approval: 'approved'
 		});
+
+		await workflow.start(
+			ctx,
+			internal.analysis.feedbackAnalysisWorkflow,
+			{
+				feedbackId: feedback._id,
+				content: feedback.content,
+				moderate: false
+			},
+			{
+				onComplete: internal.workflow.cleanupWorkflow,
+				context: null
+			}
+		);
 	}
 });
 
