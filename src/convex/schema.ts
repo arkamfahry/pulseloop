@@ -24,7 +24,7 @@ export default defineSchema({
 	})
 		.index('by_status', ['status'])
 		.index('by_embeddingId', ['embeddingId'])
-		.index('by_userId_votes', ['userId', 'votes'])
+		.index('by_userId_published_votes', ['userId', 'published', 'votes'])
 		.index('by_published_votes', ['published', 'votes'])
 		.index('by_published_sentiment_createdAt_votes', [
 			'published',
