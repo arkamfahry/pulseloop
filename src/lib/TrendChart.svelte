@@ -1,8 +1,18 @@
 <script lang="ts">
-	import { Card, Spinner } from 'flowbite-svelte';
-	import { SvelteFlow, Controls } from '@xyflow/svelte';
-	import '@xyflow/svelte/dist/style.css';
+	import type { api } from '$convex/_generated/api';
+	import type { FunctionReturnType } from 'convex/server';
+
 	import CustomNode from '$lib/CustomNode.svelte';
+	import { Controls, SvelteFlow } from '@xyflow/svelte';
+	import '@xyflow/svelte/dist/style.css';
+
+	interface Props {
+		isLoading: boolean;
+		data: FunctionReturnType<typeof api.keyword.getKeywordCloud> | null | undefined;
+		error?: Error | null;
+	}
+
+	let props: Props = $props();
 
 	const nodeTypes = {
 		custom: CustomNode

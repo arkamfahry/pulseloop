@@ -1,20 +1,20 @@
 <script lang="ts">
+	import { page } from '$app/state';
+	import logo from '$lib/assets/favicon.svg';
 	import {
 		Sidebar,
+		SidebarBrand,
+		SidebarButton,
 		SidebarGroup,
 		SidebarItem,
-		SidebarButton,
-		uiHelpers,
-		SidebarBrand
+		uiHelpers
 	} from 'flowbite-svelte';
 	import {
 		ChartPieOutline,
+		LightbulbOutline,
 		MessageDotsOutline,
-		PaperPlaneOutline,
-		LightbulbOutline
+		PaperPlaneOutline
 	} from 'flowbite-svelte-icons';
-	import { page } from '$app/state';
-	import logo from '$lib/assets/favicon.svg';
 
 	let activeUrl = $state(page.url.pathname);
 	const sidebarUi = uiHelpers();

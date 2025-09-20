@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Card, Badge, Button } from 'flowbite-svelte';
+	import { Badge, Button, Card } from 'flowbite-svelte';
 	import { CaretUpOutline } from 'flowbite-svelte-icons';
 
 	interface Props {

@@ -1,34 +1,34 @@
 <script lang="ts">
 	import type { PageProps } from './$types';
+
+	import { goto } from '$app/navigation';
+	import { api } from '$convex/_generated/api';
+	import logo from '$lib/assets/favicon.svg';
+	import { authClient } from '$lib/auth-client';
+	import WallCard from '$lib/WallCard.svelte';
+	import { useAuth } from '@mmailaender/convex-better-auth-svelte/svelte';
+	import { useQuery } from 'convex-svelte';
 	import {
-		Navbar,
-		NavBrand,
 		Button,
-		Search,
-		ToolbarButton,
 		Card,
 		Checkbox,
-		Input,
-		Label,
 		Dropdown,
 		DropdownHeader,
-		Spinner
+		Input,
+		Label,
+		Navbar,
+		NavBrand,
+		Search,
+		Spinner,
+		ToolbarButton
 	} from 'flowbite-svelte';
 	import {
+		AlignJustifyOutline,
 		CaretUpOutline,
 		PaperPlaneOutline,
-		SearchOutline,
-		ArrowRightToBracketOutline,
-		AlignJustifyOutline
+		SearchOutline
 	} from 'flowbite-svelte-icons';
 	import { fade } from 'svelte/transition';
-	import logo from '$lib/assets/favicon.svg';
-	import { useAuth } from '@mmailaender/convex-better-auth-svelte/svelte';
-	import { authClient } from '$lib/auth-client';
-	import { goto } from '$app/navigation';
-	import WallCard from '$lib/WallCard.svelte';
-	import { useQuery } from 'convex-svelte';
-	import { api } from '$convex/_generated/api';
 
 	const isAuthenticated = $derived(useAuth().isAuthenticated);
 

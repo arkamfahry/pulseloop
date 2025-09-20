@@ -1,13 +1,12 @@
 <script lang="ts">
-	import TrendCard from '$lib/TrendCard.svelte';
-	import SentimentTrendCard from '$lib/SentimentTrendCard.svelte';
-	import { useQuery } from 'convex-svelte';
 	import { api } from '$convex/_generated/api';
-	import SentimentPieChart from '$lib/SentimentPieChart.svelte';
-	import { SvelteFlow, Controls } from '@xyflow/svelte';
-	import '@xyflow/svelte/dist/style.css';
 	import CustomNode from '$lib/CustomNode.svelte';
+	import SentimentPieChart from '$lib/SentimentPieChart.svelte';
+	import SentimentTrendCard from '$lib/SentimentTrendCard.svelte';
+	import TrendCard from '$lib/TrendCard.svelte';
 	import TrendChart from '$lib/TrendChart.svelte';
+	import '@xyflow/svelte/dist/style.css';
+	import { useQuery } from 'convex-svelte';
 
 	let nodes = $state.raw([
 		{
