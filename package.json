@@ -59,6 +59,7 @@
 		"convex": "^1.26.2",
 		"convex-helpers": "^0.1.104",
 		"convex-svelte": "^0.0.11",
-		"layerchart": "^2.0.0-next.38"
+		"layerchart": "^2.0.0-next.38",
+		"neverthrow": "^8.2.0"
 	}
 }
