@@ -243,7 +243,7 @@ export const feedbackAnalysisWorkflow = workflow.define({
 		moderate: v.boolean()
 	},
 	handler: async (step, args): Promise<void> => {
-		if (!args.moderate) {
+		if (args.moderate) {
 			const moderated = await step.runAction(internal.analysis.moderateFeedback, {
 				feedbackId: args.feedbackId,
 				content: args.content
