@@ -24,6 +24,7 @@
 	} from 'flowbite-svelte';
 	import {
 		AlignJustifyOutline,
+		CaretDownOutline,
 		CaretUpOutline,
 		PaperPlaneOutline,
 		SearchOutline
@@ -53,7 +54,8 @@
 		content: '',
 		sentiment: undefined as 'positive' | 'negative' | 'neutral' | undefined,
 		status: undefined as 'open' | 'noted' | undefined,
-		myFeedback: false
+		myFeedback: false,
+		votes: undefined as 'asc' | 'desc' | undefined
 	});
 
 	let debouncedContent = $state('');
@@ -75,7 +77,8 @@
 		content: debouncedContent,
 		sentiment: filters.sentiment,
 		status: filters.status,
-		myFeedback: filters.myFeedback
+		myFeedback: filters.myFeedback,
+		votes: filters.votes
 	}));
 
 	const currentUserQuery = useQuery(api.auth.getCurrentUser, {});
@@ -86,6 +89,10 @@
 
 	function updateStatus(status: 'open' | 'noted') {
 		filters.status = filters.status === status ? undefined : status;
+	}
+
+	function updateVotes() {
+		filters.votes = filters.votes === 'asc' ? 'desc' : 'asc';
 	}
 </script>
 
@@ -183,8 +190,12 @@
 
 					<div class="flex flex-col items-end gap-2">
 						<div class="mt-7 flex gap-2">
-							<Button size="xs" outline>
-								<CaretUpOutline /> Vote
+							<Button size="xs" outline onclick={() => updateVotes()}>
+								{#if filters.votes === 'asc'}
+									<CaretUpOutline /> Votes
+								{:else}
+									<CaretDownOutline /> Votes
+								{/if}
 							</Button>
 						</div>
 						<div class="mt-6 flex gap-2">
