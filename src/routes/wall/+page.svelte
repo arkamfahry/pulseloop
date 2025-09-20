@@ -50,6 +50,7 @@
 	}
 
 	const publishedFeedbackQuery = useQuery(api.feedback.listPublishedFeedback, {});
+	const currentUserQuery = useQuery(api.auth.getCurrentUser, {});
 </script>
 
 <div class="flex min-h-screen flex-col bg-gray-50 dark:bg-gray-900">
@@ -70,8 +71,8 @@
 				</ToolbarButton>
 				<Dropdown placement="bottom" triggeredBy="#menu">
 					<DropdownHeader>
-						<span class="block text-sm">Test</span>
-						<span class="block truncate text-sm font-medium">test@gmail.com</span>
+						<span class="block text-sm">{currentUserQuery.data?.name}</span>
+						<span class="block truncate text-sm font-medium">{currentUserQuery.data?.email}</span>
 					</DropdownHeader>
 					<DropdownHeader>
 						{#if isAuthenticated}
