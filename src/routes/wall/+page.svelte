@@ -49,8 +49,44 @@
 		hidden = !hidden;
 	}
 
-	const publishedFeedbackQuery = useQuery(api.feedback.listPublishedFeedback, {});
+	let filters = $state({
+		content: '',
+		sentiment: undefined as 'positive' | 'negative' | 'neutral' | undefined,
+		status: undefined as 'open' | 'noted' | undefined,
+		myFeedback: false
+	});
+
+	let debouncedContent = $state('');
+	let debounceTimeout: ReturnType<typeof setTimeout>;
+
+	$effect(() => {
+		console.log('Effect triggered, filters.content:', filters.content);
+		clearTimeout(debounceTimeout);
+		debounceTimeout = setTimeout(() => {
+			console.log('Debounce timeout executed, updating debouncedContent to:', filters.content);
+			debouncedContent = filters.content;
+		}, 500);
+		return () => {
+			clearTimeout(debounceTimeout);
+		};
+	});
+
+	const publishedFeedbackQuery = useQuery(api.feedback.listPublishedFeedback, () => ({
+		content: debouncedContent,
+		sentiment: filters.sentiment,
+		status: filters.status,
+		myFeedback: filters.myFeedback
+	}));
+
 	const currentUserQuery = useQuery(api.auth.getCurrentUser, {});
+
+	function updateSentiment(sentiment: 'positive' | 'negative' | 'neutral') {
+		filters.sentiment = filters.sentiment === sentiment ? undefined : sentiment;
+	}
+
+	function updateStatus(status: 'open' | 'noted') {
+		filters.status = filters.status === status ? undefined : status;
+	}
 </script>
 
 <div class="flex min-h-screen flex-col bg-gray-50 dark:bg-gray-900">
@@ -87,21 +123,61 @@
 	{#if !hidden}
 		<div class="fixed inset-0 z-20 flex items-start justify-center pt-15" transition:fade>
 			<Card class="mx-1 w-full max-w-3xl rounded-xl p-4 shadow-lg">
-				<Search size="md" placeholder="Search..." />
+				<Search size="md" placeholder="Search..." bind:value={filters.content} clearable />
 
 				<div class="mt-4 flex flex-wrap justify-between gap-4 p-1">
 					<div>
 						<div class="mb-2 font-semibold">Sentiment</div>
 						<div class="mb-2 flex gap-2">
-							<Button color="red" outline size="xs" class="p-1">Negative</Button>
-							<Button color="blue" outline size="xs" class="p-1">Neutral</Button>
-							<Button color="green" outline size="xs" class="p-1">Positive</Button>
+							<Button
+								color="red"
+								outline={filters.sentiment !== 'negative'}
+								size="xs"
+								class="p-1"
+								onclick={() => updateSentiment('negative')}
+							>
+								Negative
+							</Button>
+							<Button
+								color="blue"
+								outline={filters.sentiment !== 'neutral'}
+								size="xs"
+								class="p-1"
+								onclick={() => updateSentiment('neutral')}
+							>
+								Neutral
+							</Button>
+							<Button
+								color="green"
+								outline={filters.sentiment !== 'positive'}
+								size="xs"
+								class="p-1"
+								onclick={() => updateSentiment('positive')}
+							>
+								Positive
+							</Button>
 						</div>
 
 						<div class="mb-2 font-semibold">Status</div>
 						<div class="mb-2 flex gap-2">
-							<Button color="red" outline size="xs" class="p-1">Open</Button>
-							<Button color="green" outline size="xs" class="p-1">Noted</Button>
+							<Button
+								color="red"
+								outline={filters.status !== 'open'}
+								size="xs"
+								class="p-1"
+								onclick={() => updateStatus('open')}
+							>
+								Open
+							</Button>
+							<Button
+								color="green"
+								outline={filters.status !== 'noted'}
+								size="xs"
+								class="p-1"
+								onclick={() => updateStatus('noted')}
+							>
+								Noted
+							</Button>
 						</div>
 					</div>
 
@@ -112,7 +188,7 @@
 							</Button>
 						</div>
 						<div class="mt-6 flex gap-2">
-							<Checkbox>My Feedback</Checkbox>
+							<Checkbox bind:checked={filters.myFeedback}>My Feedback</Checkbox>
 						</div>
 					</div>
 				</div>
