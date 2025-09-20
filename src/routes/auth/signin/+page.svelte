@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { invalidateAll } from '$app/navigation';
 	import { Card, Label, Input, Checkbox, Button } from 'flowbite-svelte';
 	import Navbar from '$lib/Navbar.svelte';
 	import { authClient } from '$lib/auth-client';
@@ -16,7 +16,6 @@
 
 		try {
 			await authClient.signIn.email({ email, password });
-			goto('/');
 		} catch (err: any) {
 			if (err?.message) {
 				error = err.message;
@@ -25,6 +24,7 @@
 			}
 		} finally {
 			submitting = false;
+			await invalidateAll();
 		}
 	}
 </script>
