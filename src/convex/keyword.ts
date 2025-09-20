@@ -164,22 +164,31 @@ export const getKeywordCloud = query({
 			}
 		}
 
+		type Sentiment = 'positive' | 'negative' | 'neutral';
+
 		type Keyword = {
 			id: Id<'keywords'>;
 			name: string;
 			count: number;
-			negative: number;
-			neutral: number;
-			positive: number;
+			sentiment: Sentiment;
 		};
 
-		const keywordMap: Record<string, Keyword> = {};
+		const keywordMap: Record<
+			string,
+			{
+				id: Id<'keywords'>;
+				name: string;
+				count: number;
+				sentimentCounts: Record<Sentiment, number>;
+			}
+		> = {};
+
 		const allKeywords = await ctx.db.query('keywords').collect();
 		const keywordLookup = new Map(allKeywords.map((t) => [t.keyword, t]));
 
 		for await (const feedback of orderedQuery) {
 			const feedbackKeywords: string[] = feedback.keywords ?? [];
-			const sentiment = feedback.sentiment as 'positive' | 'negative' | 'neutral' | undefined;
+			const sentiment = feedback.sentiment as Sentiment | undefined;
 
 			for (const feedbackKeyword of feedbackKeywords) {
 				const keyword = keywordLookup.get(feedbackKeyword);
@@ -190,22 +199,25 @@ export const getKeywordCloud = query({
 						id: keyword._id,
 						name: keyword.keyword,
 						count: 0,
-						positive: 0,
-						negative: 0,
-						neutral: 0
+						sentimentCounts: { positive: 0, negative: 0, neutral: 0 }
 					};
 				}
-				keywordMap[feedbackKeyword].count += 1;
-				if (sentiment === 'positive') {
-					keywordMap[feedbackKeyword].positive += 1;
-				} else if (sentiment === 'negative') {
-					keywordMap[feedbackKeyword].negative += 1;
-				} else if (sentiment === 'neutral') {
-					keywordMap[feedbackKeyword].neutral += 1;
+				keywordMap[feedbackKeyword].count++;
+				if (sentiment) {
+					keywordMap[feedbackKeyword].sentimentCounts[sentiment]++;
 				}
 			}
 		}
 
-		return keywordMap;
+		const result: Record<string, Keyword> = {};
+		for (const [key, value] of Object.entries(keywordMap)) {
+			const { id, name, count, sentimentCounts } = value;
+			const sentiment =
+				(Object.entries(sentimentCounts).reduce((a, b) => (b[1] > a[1] ? b : a))[0] as Sentiment) ??
+				'neutral';
+			result[key] = { id, name, count, sentiment };
+		}
+
+		return result;
 	}
 });
