@@ -5,7 +5,7 @@
 	import { api } from '$convex/_generated/api';
 	import logo from '$lib/assets/favicon.svg';
 	import { authClient } from '$lib/auth-client';
-	import WallCard from '$lib/WallCard.svelte';
+	import WallCard from '$lib/wall/WallCard.svelte';
 	import { useAuth } from '@mmailaender/convex-better-auth-svelte/svelte';
 	import { useQuery } from 'convex-svelte';
 	import {
