@@ -36,9 +36,10 @@
 	async function signOut() {
 		try {
 			await authClient.signOut();
-			goto('/');
 		} catch (error) {
 			console.error('Sign out error:', error);
+		} finally {
+			goto('/');
 		}
 	}
 
@@ -62,10 +63,8 @@
 	let debounceTimeout: ReturnType<typeof setTimeout>;
 
 	$effect(() => {
-		console.log('Effect triggered, filters.content:', filters.content);
 		clearTimeout(debounceTimeout);
 		debounceTimeout = setTimeout(() => {
-			console.log('Debounce timeout executed, updating debouncedContent to:', filters.content);
 			debouncedContent = filters.content;
 		}, 500);
 		return () => {
