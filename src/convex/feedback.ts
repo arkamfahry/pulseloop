@@ -394,6 +394,27 @@ export const listPublishedFeedbackByKeywordId = query({
 	}
 });
 
+export const listPublishedFeedbackByUserId = query({
+	args: {
+		userId: v.id('users')
+	},
+	handler: async (ctx, args) => {
+		const feedbacks = await ctx.db
+			.query('feedbacks')
+			.withIndex('by_userId_votes', (q) => q.eq('userId', args.userId))
+			.order('desc')
+			.collect();
+
+		const feedbacksWithUsers = await Promise.all(
+			feedbacks.map(async (feedback) => {
+				const user = await ctx.db.get(feedback.userId);
+				return { ...feedback, user };
+			})
+		);
+		return feedbacksWithUsers;
+	}
+});
+
 export const getTotalFeedbackCount = query({
 	handler: async (ctx) => {
 		const feedbacks = await ctx.db.query('feedbacks').collect();
