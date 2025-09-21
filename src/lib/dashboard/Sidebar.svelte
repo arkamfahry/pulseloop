@@ -1,7 +1,12 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
+	import { api } from '$convex/_generated/api';
 	import logo from '$lib/assets/favicon.svg';
+	import { authClient } from '$lib/auth-client';
+	import { useQuery } from 'convex-svelte';
 	import {
+		Button,
 		Sidebar,
 		SidebarBrand,
 		SidebarButton,
@@ -10,6 +15,7 @@
 		uiHelpers
 	} from 'flowbite-svelte';
 	import {
+		ArrowRightToBracketOutline,
 		ChartPieOutline,
 		LightbulbOutline,
 		MessageDotsOutline,
@@ -25,6 +31,17 @@
 		isOpen = sidebarUi.isOpen;
 		activeUrl = page.url.pathname;
 	});
+
+	const currentUserQuery = useQuery(api.auth.getCurrentUser, {});
+
+	async function signOut() {
+		try {
+			await authClient.signOut();
+			goto('/');
+		} catch (error) {
+			console.error('Sign out error:', error);
+		}
+	}
 </script>
 
 <SidebarButton onclick={sidebarUi.toggle} class="fixed top-4 left-4 z-50" />
@@ -36,7 +53,7 @@
 	{closeSidebar}
 	position="static"
 	params={{ x: -50, duration: 50 }}
-	class="h-full w-64 border-r border-gray-300 dark:border-gray-700"
+	class="relative h-full w-64 border-r border-gray-300 pb-20 dark:border-gray-700"
 	classes={{
 		nonactive: 'p-2 text-gray-600',
 		active: 'p-2 text-blue-600 font-semibold bg-gray-100 dark:bg-gray-700'
@@ -72,4 +89,16 @@
 			{/snippet}
 		</SidebarItem>
 	</SidebarGroup>
+
+	<div
+		class="absolute bottom-0 left-0 flex w-full items-center justify-between border-t border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-800"
+	>
+		<div>
+			<div class="font-semibold text-gray-900 dark:text-white">{currentUserQuery.data?.name}</div>
+			<div class="text-sm text-gray-500 dark:text-gray-400">{currentUserQuery.data?.email}</div>
+		</div>
+		<Button onclick={() => signOut()} color="light">
+			<ArrowRightToBracketOutline class="h-5 w-5 text-gray-500 group-hover:text-gray-900" />
+		</Button>
+	</div>
 </Sidebar>
