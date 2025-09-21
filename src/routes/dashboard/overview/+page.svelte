@@ -12,7 +12,7 @@
 	const openFeedbackCountQuery = useQuery(api.feedback.getOpenFeedbackCount, {});
 	const overallSentimentQuery = useQuery(api.sentiment.getOverallSentiment, {});
 	const sentimentCountsQuery = useQuery(api.sentiment.getSentimentsCounts, {});
-	const keywordCloudQuery = useQuery(api.keyword.getKeywordCloud, {});
+	const keywordCloudQuery = useQuery(api.keyword.getKeywordCloud, { status: 'open' });
 	const topFeedbackQuery = useQuery(api.feedback.getTopFeedback, {});
 </script>
 
