@@ -22,15 +22,17 @@
 	</section>
 
 	<section class="grid grid-cols-10 gap-6">
-		<div class="col-span-4 flex min-h-48 flex-col justify-start rounded-2xl bg-white p-8 shadow-sm">
+		<div
+			class="col-span-4 flex min-h-48 flex-col justify-start rounded-2xl border border-gray-200 bg-white p-8 shadow-md dark:border-gray-700 dark:bg-gray-800"
+		>
 			<div class="mb-3 text-lg font-semibold">Sentiment</div>
 			<SentimentDistributionChart query={sentimentCountsQuery} />
 		</div>
-		<div class="col-span-6 flex min-h-48 flex-col justify-start rounded-2xl bg-white p-8 shadow-sm">
+		<div
+			class="col-span-6 flex min-h-48 flex-col justify-start rounded-2xl border border-gray-200 bg-white p-8 shadow-md dark:border-gray-700 dark:bg-gray-800"
+		>
 			<div class="mb-3 text-lg font-semibold">Trends</div>
-			<div class="flex flex-wrap gap-2.5">
-				<TrendChart query={keywordCloudQuery} />
-			</div>
+			<TrendChart query={keywordCloudQuery} />
 		</div>
 	</section>
 
