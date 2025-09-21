@@ -1,7 +1,19 @@
 <script lang="ts">
+	import { api } from '$convex/_generated/api';
 	import type { Id } from '$convex/_generated/dataModel';
+	import { useConvexClient } from 'convex-svelte';
 	import { Badge, Button, Card } from 'flowbite-svelte';
 	import { CaretUpOutline } from 'flowbite-svelte-icons';
+
+	const client = useConvexClient();
+
+	async function toggleFeedbackVote() {
+		try {
+			await client.mutation(api.feedback.toggleFeedbackVote, { feedbackId: props.id });
+		} catch (error) {
+			console.error('Error up voting feedback:', error);
+		}
+	}
 
 	interface Props {
 		id: Id<'feedbacks'>;
@@ -51,7 +63,7 @@
 				>
 			</div>
 			<div class="flex items-center justify-end">
-				<Button color="light" size="sm">
+				<Button color="light" size="sm" onclick={() => toggleFeedbackVote()}>
 					<CaretUpOutline size="sm" class="text-gray-400" />
 					<span class="text-sm font-medium text-gray-600 dark:text-gray-400">{props.votes}</span>
 				</Button>
