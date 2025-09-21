@@ -15,7 +15,7 @@
 	let props: Props = $props();
 </script>
 
-<div class="h-72 overflow-auto rounded-sm">
+<div class="h-72">
 	{#if props.query.isLoading}
 		<div class="flex h-full flex-1 items-center justify-center">
 			<Spinner />
