@@ -1,10 +1,12 @@
 <script lang="ts">
+	import type { Id } from '$convex/_generated/dataModel';
 	import { Badge, Button, Card } from 'flowbite-svelte';
 	import { CaretUpOutline } from 'flowbite-svelte-icons';
 
 	interface Props {
+		id: Id<'feedbacks'>;
 		userName: string;
-		date: string;
+		date: number;
 		votes: number;
 		content: string;
 		keywords: string[];
@@ -37,8 +39,16 @@
 	<div class="flex w-full flex-col">
 		<div class="mb-4 flex w-full items-start justify-between gap-2">
 			<div class="flex items-center gap-2">
-				<span class="font-semibold text-gray-900 dark:text-white">{props.userName}</span>
-				<span class="text-sm text-gray-500 dark:text-gray-400">{props.date}</span>
+				<span class="font-semibold text-gray-900 dark:text-white"
+					>{props.userName ?? 'Anonymous'}</span
+				>
+				<span class="text-sm text-gray-500 dark:text-gray-400"
+					>{new Date(props.date).toLocaleDateString(undefined, {
+						year: 'numeric',
+						month: 'short',
+						day: 'numeric'
+					})}</span
+				>
 			</div>
 			<div class="flex items-center justify-end">
 				<Button color="light" size="sm">

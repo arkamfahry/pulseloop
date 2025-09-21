@@ -27,12 +27,9 @@
 		{:else}
 			{#each props.query.data ?? [] as feedback}
 				<FeedbackCard
+					id={feedback._id}
 					userName={feedback.user?.name ?? 'Anonymous'}
-					date={new Date(feedback.createdAt).toLocaleDateString(undefined, {
-						year: 'numeric',
-						month: 'short',
-						day: 'numeric'
-					})}
+					date={feedback.createdAt}
 					content={feedback.content ?? ''}
 					keywords={feedback.keywords ?? []}
 					status={feedback.status ?? 'open'}
