@@ -1,5 +1,7 @@
 <script lang="ts">
+	import { api } from '$convex/_generated/api';
 	import type { Id } from '$convex/_generated/dataModel';
+	import { useConvexClient } from 'convex-svelte';
 	import { Badge, Button, Card, Checkbox } from 'flowbite-svelte';
 	import { CaretUpOutline, CheckOutline, TrashBinOutline } from 'flowbite-svelte-icons';
 
@@ -14,6 +16,24 @@
 		sentiment: 'positive' | 'neutral' | 'negative';
 	}
 
+	const client = useConvexClient();
+
+	async function toggleFeedbackNoted() {
+		try {
+			await client.mutation(api.feedback.toggleFeedbackNoted, { feedbackId: props.id });
+		} catch (error) {
+			console.error('Error toggling feedback noted status:', error);
+		}
+	}
+
+	async function deleteFeedback() {
+		try {
+			await client.mutation(api.feedback.deleteFeedback, { feedbackId: props.id });
+		} catch (error) {
+			console.error('Error deleting feedback:', error);
+		}
+	}
+
 	let props: Props = $props();
 
 	function getSentimentColor(sentiment: string) {
@@ -25,6 +45,17 @@
 			case 'neutral':
 			default:
 				return 'blue';
+		}
+	}
+
+	function getStatusColor(status: string) {
+		switch (status) {
+			case 'open':
+				return 'light';
+			case 'noted':
+				return 'green';
+			default:
+				return 'light';
 		}
 	}
 </script>
@@ -50,11 +81,16 @@
 				</span>
 			</div>
 			<div class="flex items-center gap-2">
-				<Button color="light" size="sm" class="p-1">
-					<TrashBinOutline size="md" class="text-gray-500 group-hover:text-gray-900" />
+				<Button color="light" size="sm" class="p-1" onclick={() => deleteFeedback()}>
+					<TrashBinOutline size="md" />
 				</Button>
-				<Button color="light" size="sm" class="p-1">
-					<CheckOutline size="md" class="text-gray-500 group-hover:text-gray-900" />
+				<Button
+					color={getStatusColor(props.status)}
+					size="sm"
+					class="p-1"
+					onclick={() => toggleFeedbackNoted()}
+				>
+					<CheckOutline size="md" />
 				</Button>
 			</div>
 		</div>
