@@ -11,7 +11,7 @@
 		try {
 			await client.mutation(api.feedback.toggleFeedbackVote, { feedbackId: props.id });
 		} catch (error) {
-			console.error('Error up voting feedback:', error);
+			console.error('Error toggling feedback vote:', error);
 		}
 	}
 
@@ -64,8 +64,8 @@
 			</div>
 			<div class="flex items-center justify-end">
 				<Button color="light" size="sm" onclick={() => toggleFeedbackVote()}>
-					<CaretUpOutline size="sm" class="text-gray-400" />
-					<span class="text-sm font-medium text-gray-600 dark:text-gray-400">{props.votes}</span>
+					<CaretUpOutline size="sm" />
+					{props.votes}
 				</Button>
 			</div>
 		</div>
