@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { api } from '$convex/_generated/api';
+	import TopFeedbackList from '$lib/dashboard/TopFeedbackList.svelte';
 	import SentimentDistributionChart from '$lib/kpi/SentimentDistributionChart.svelte';
 	import SentimentTrendCard from '$lib/kpi/SentimentTrendCard.svelte';
 	import TrendCard from '$lib/kpi/TrendCard.svelte';
@@ -12,6 +13,7 @@
 	const overallSentimentQuery = useQuery(api.sentiment.getOverallSentiment, {});
 	const sentimentCountsQuery = useQuery(api.sentiment.getSentimentsCounts, {});
 	const keywordCloudQuery = useQuery(api.keyword.getKeywordCloud, {});
+	const topFeedbackQuery = useQuery(api.feedback.getTopFeedback, {});
 </script>
 
 <main class="flex min-w-0 flex-col gap-6">
@@ -36,12 +38,10 @@
 		</div>
 	</section>
 
-	<section class="flex min-h-40 flex-col rounded-2xl bg-white p-8 shadow-sm">
+	<section
+		class="flex min-h-40 flex-col rounded-2xl border border-gray-200 bg-white p-8 shadow-md dark:border-gray-700 dark:bg-gray-800"
+	>
 		<div class="mb-3 text-lg font-semibold">Top Feedback</div>
-		<div class="mt-4 flex flex-col gap-4">
-			<div class="rounded-xl bg-gray-50 p-6 text-base text-gray-900 shadow-sm">[Feedback 1]</div>
-			<div class="rounded-xl bg-gray-50 p-6 text-base text-gray-900 shadow-sm">[Feedback 2]</div>
-			<div class="rounded-xl bg-gray-50 p-6 text-base text-gray-900 shadow-sm">[Feedback 3]</div>
-		</div>
+		<TopFeedbackList query={topFeedbackQuery} />
 	</section>
 </main>

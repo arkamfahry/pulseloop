@@ -1,10 +1,12 @@
 <script lang="ts">
+	import type { Id } from '$convex/_generated/dataModel';
 	import { Badge, Button, Card, Checkbox } from 'flowbite-svelte';
 	import { CaretUpOutline, CheckOutline, TrashBinOutline } from 'flowbite-svelte-icons';
 
 	interface Props {
+		id: Id<'feedbacks'>;
 		userName: string;
-		date: string;
+		date: number;
 		votes: number;
 		content: string;
 		keywords: string[];
@@ -13,10 +15,6 @@
 	}
 
 	let props: Props = $props();
-
-	function getStatusColor(status: string) {
-		return status === 'open' ? 'red' : 'green';
-	}
 
 	function getSentimentColor(sentiment: string) {
 		switch (sentiment) {
@@ -37,7 +35,13 @@
 			<div class="flex items-center gap-2">
 				<Checkbox />
 				<span class="truncate text-sm font-semibold text-gray-900">{props.userName}</span>
-				<span class="px-1 text-sm text-gray-500">{props.date}</span>
+				<span class="px-1 text-sm text-gray-500"
+					>{new Date(props.date).toLocaleDateString(undefined, {
+						year: 'numeric',
+						month: 'short',
+						day: 'numeric'
+					})}</span
+				>
 				<span
 					class="flex items-center gap-1 rounded-lg border border-none bg-white px-2 py-0.5 text-sm font-medium text-gray-600"
 				>
