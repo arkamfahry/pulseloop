@@ -97,7 +97,7 @@
 			<div class="font-semibold text-gray-900 dark:text-white">{currentUserQuery.data?.name}</div>
 			<div class="text-sm text-gray-500 dark:text-gray-400">{currentUserQuery.data?.email}</div>
 		</div>
-		<Button onclick={() => signOut()} color="light">
+		<Button onclick={() => signOut()} color="light" class="border-none bg-transparent" size="sm">
 			<ArrowRightToBracketOutline class="h-5 w-5 text-gray-500 group-hover:text-gray-900" />
 		</Button>
 	</div>
