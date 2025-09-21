@@ -154,7 +154,9 @@ export const getKeywordCloud = query({
 					return expr;
 				});
 			} else {
-				indexedQuery = tableQuery.withIndex('by_published_votes', (q) => q.eq('published', true));
+				indexedQuery = tableQuery.withIndex('by_published_sentiment_createdAt_votes', (q) =>
+					q.eq('published', true)
+				);
 			}
 
 			if (args.votes === 'asc') {
