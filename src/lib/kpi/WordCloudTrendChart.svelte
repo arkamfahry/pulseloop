@@ -42,8 +42,10 @@
 	]);
 </script>
 
-<div style:width="100vw" style:height="40vh">
-	<SvelteFlow bind:nodes {nodeTypes}>
-		<Controls />
-	</SvelteFlow>
+<div class="flex flex-wrap gap-2.5">
+	<div style:width="100vw" style:height="40vh">
+		<SvelteFlow bind:nodes {nodeTypes}>
+			<Controls />
+		</SvelteFlow>
+	</div>
 </div>
