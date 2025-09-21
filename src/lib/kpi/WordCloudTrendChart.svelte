@@ -99,8 +99,6 @@
 
 		const keywordEntries = Object.entries(props.query.data);
 
-		console.log('Keyword Entries:', keywordEntries);
-
 		const sortedKeywords = keywordEntries
 			.map(([key, keyword]) => ({ key, ...keyword }))
 			.sort((a, b) => b.count - a.count);
