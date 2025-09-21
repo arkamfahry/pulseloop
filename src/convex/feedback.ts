@@ -243,7 +243,9 @@ export const listUnpublishedFeedback = query({
 				q.search('content', args.content!).eq('published', false)
 			);
 		} else {
-			indexedQuery = tableQuery.withIndex('by_published_votes', (q) => q.eq('published', false));
+			indexedQuery = tableQuery.withIndex('by_published_sentiment_createdAt_votes', (q) =>
+				q.eq('published', false)
+			);
 			orderedQuery = indexedQuery.order('desc');
 		}
 
@@ -355,7 +357,9 @@ export const listPublishedFeedback = query({
 						return expr;
 					});
 				} else {
-					indexedQuery = tableQuery.withIndex('by_published_votes', (q) => q.eq('published', true));
+					indexedQuery = tableQuery.withIndex('by_published_sentiment_createdAt_votes', (q) =>
+						q.eq('published', true)
+					);
 				}
 
 				if (args.votes === 'asc') {
@@ -514,7 +518,9 @@ export const searchPublishedFeedback = query({
 					return expr;
 				});
 			} else {
-				indexedQuery = tableQuery.withIndex('by_published_votes', (q) => q.eq('published', true));
+				indexedQuery = tableQuery.withIndex('by_published_sentiment_createdAt_votes', (q) =>
+					q.eq('published', true)
+				);
 			}
 
 			if (args.votes === 'asc') {
@@ -534,6 +540,18 @@ export const searchPublishedFeedback = query({
 		);
 
 		return feedbacksWithUsers;
+	}
+});
+
+export const getTopFeedback = query({
+	handler: async (ctx) => {
+		const feedbacks = await ctx.db
+			.query('feedbacks')
+			.withIndex('by_published_sentiment_createdAt_votes', (q) => q.eq('published', true))
+			.order('desc')
+			.take(10);
+
+		return feedbacks.length;
 	}
 });
 
