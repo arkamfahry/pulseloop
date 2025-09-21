@@ -7,14 +7,22 @@ export const load: LayoutServerLoad = async ({ cookies, url }) => {
 	const client = createConvexHttpClient({ cookies });
 	const currentUser = await client.query(api.auth.getCurrentUser, {});
 
-	const publicRoutes = ['/auth/signin', '/auth/signup', '/'];
+	const publicRoutes = ['/auth/signin', '/auth/signup'];
 	const isPublicRoute = publicRoutes.includes(url.pathname);
 
-	if (!currentUser && !isPublicRoute) {
+	if (!currentUser && !isPublicRoute && url.pathname !== '/') {
 		throw redirect(302, '/auth/signin');
 	}
 
 	if (currentUser) {
+		if (url.pathname === '/') {
+			if (currentUser.role === 'admin') {
+				throw redirect(302, '/dashboard');
+			} else if (currentUser.role === 'user') {
+				throw redirect(302, '/wall');
+			}
+		}
+
 		if (url.pathname === '/auth/signin' || url.pathname === '/auth/signup') {
 			if (currentUser.role === 'admin') {
 				throw redirect(302, '/dashboard');
