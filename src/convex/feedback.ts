@@ -551,7 +551,14 @@ export const getTopFeedback = query({
 			.order('desc')
 			.take(10);
 
-		return feedbacks.length;
+		const feedbacksWithUsers = await Promise.all(
+			feedbacks.map(async (feedback) => {
+				const user = await ctx.db.get(feedback.userId);
+				return { ...feedback, user };
+			})
+		);
+
+		return feedbacksWithUsers;
 	}
 });
 
