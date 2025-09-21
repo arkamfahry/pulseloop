@@ -124,6 +124,33 @@ export const approveFeedback = mutation({
 	}
 });
 
+export const toggleFeedbackNoted = mutation({
+	args: {
+		feedbackId: v.id('feedbacks')
+	},
+	handler: async (ctx, args) => {
+		const userId = await betterAuthComponent.getAuthUserId(ctx);
+		if (!userId) {
+			throw new Error('User not authenticated');
+		}
+
+		const feedback = await ctx.db.get(args.feedbackId);
+		if (!feedback) {
+			throw new Error('Feedback not found');
+		}
+
+		if (feedback.status === 'open') {
+			await ctx.db.patch(feedback._id, {
+				status: 'noted'
+			});
+		} else {
+			await ctx.db.patch(feedback._id, {
+				status: 'open'
+			});
+		}
+	}
+});
+
 export const deleteFeedback = mutation({
 	args: {
 		feedbackId: v.id('feedbacks')
@@ -139,8 +166,6 @@ export const deleteFeedback = mutation({
 			throw new Error('Feedback not found');
 		}
 
-		await ctx.db.delete(feedback._id);
-
 		if (!feedback.keywords?.length || !feedback.sentiment) {
 			return;
 		}
@@ -149,6 +174,12 @@ export const deleteFeedback = mutation({
 			keywords: feedback.keywords,
 			feedbackId: args.feedbackId
 		});
+
+		if (feedback.embeddingId) {
+			await ctx.db.delete(feedback.embeddingId);
+		}
+
+		await ctx.db.delete(feedback._id);
 	}
 });
 
