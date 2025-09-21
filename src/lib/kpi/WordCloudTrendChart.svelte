@@ -5,6 +5,7 @@
 	import WordCloudNode from '$lib/WordCloudNode.svelte';
 	import { Controls, SvelteFlow } from '@xyflow/svelte';
 	import '@xyflow/svelte/dist/style.css';
+	import { Spinner } from 'flowbite-svelte';
 
 	interface Props {
 		query: {
@@ -20,32 +21,109 @@
 		custom: WordCloudNode
 	};
 
-	let nodes = $state.raw([
-		{
-			id: '1',
-			type: 'custom',
-			position: { x: 0, y: 0 },
-			data: { keyword: 'MC Exam', sentiment: 'negative' }
-		},
-		{
-			id: '2',
-			type: 'custom',
-			position: { x: 100, y: 100 },
-			data: { keyword: 'Hackathon', sentiment: 'positive' }
-		},
-		{
-			id: '3',
-			type: 'custom',
-			position: { x: 200, y: 200 },
-			data: { keyword: 'ECS Exam', sentiment: 'neutral' }
+	let placedNodes: Array<{ x: number; y: number; radius: number }> = [];
+
+	function getNodeRadius(count: number, maxCount: number): number {
+		const minRadius = 30;
+		const maxRadius = 80;
+		const normalizedSize = count / maxCount;
+		return minRadius + (maxRadius - minRadius) * normalizedSize;
+	}
+
+	function checkCollision(x: number, y: number, radius: number): boolean {
+		return placedNodes.some((node) => {
+			const distance = Math.sqrt((x - node.x) ** 2 + (y - node.y) ** 2);
+			return distance < radius + node.radius + 10;
+		});
+	}
+
+	function generateSpiralPosition(
+		keyword: { count: number },
+		index: number,
+		sortedKeywords: Array<{ count: number }>,
+		centerX = 400,
+		centerY = 300
+	) {
+		const maxCount = sortedKeywords[0]?.count || 1;
+		const nodeRadius = getNodeRadius(keyword.count, maxCount);
+
+		if (index === 0) {
+			placedNodes = [{ x: centerX, y: centerY, radius: nodeRadius }];
+			return { x: centerX, y: centerY };
 		}
-	]);
+
+		let radius = 60;
+		let angle = 0;
+		let spiralStep = 0.5;
+		let radiusStep = 8;
+
+		while (radius < 400) {
+			const x = centerX + Math.cos(angle) * radius;
+			const y = centerY + Math.sin(angle) * radius;
+
+			if (!checkCollision(x, y, nodeRadius)) {
+				placedNodes.push({ x, y, radius: nodeRadius });
+				return { x, y };
+			}
+
+			angle += spiralStep;
+			radius += (radiusStep * spiralStep) / (2 * Math.PI);
+		}
+
+		const fallbackX = centerX + (Math.random() - 0.5) * 200;
+		const fallbackY = centerY + (Math.random() - 0.5) * 200;
+		placedNodes.push({ x: fallbackX, y: fallbackY, radius: nodeRadius });
+		return { x: fallbackX, y: fallbackY };
+	}
+
+	let nodes = $derived.by(() => {
+		placedNodes = [];
+
+		if (!props.query.data) {
+			return [
+				{
+					id: '1',
+					type: 'custom' as const,
+					position: { x: 400, y: 300 },
+					data: { keyword: 'No Keywords Available', sentiment: 'neutral', count: 5 }
+				}
+			];
+		}
+
+		const keywordEntries = Object.entries(props.query.data);
+
+		console.log('Keyword Entries:', keywordEntries);
+
+		const sortedKeywords = keywordEntries
+			.map(([key, keyword]) => ({ key, ...keyword }))
+			.sort((a, b) => b.count - a.count);
+
+		return sortedKeywords.map((keyword, index) => ({
+			id: keyword.id,
+			type: 'custom' as const,
+			position: generateSpiralPosition(keyword, index, sortedKeywords),
+			data: {
+				keyword: keyword.name,
+				sentiment: keyword.sentiment,
+				count: keyword.count
+			},
+			zIndex: 1000 + keyword.count
+		}));
+	});
 </script>
 
-<div class="flex flex-wrap gap-2.5">
-	<div style:width="100vw" style:height="40vh">
-		<SvelteFlow bind:nodes {nodeTypes}>
+{#if props.query.isLoading}
+	<div class="flex h-full flex-1 items-center justify-center">
+		<Spinner />
+	</div>
+{:else if props.query.error}
+	<div class="flex h-64 items-center justify-center">
+		<div class="text-red-500">Error loading keywords: {props.query.error.message}</div>
+	</div>
+{:else}
+	<div style="height: 100%; width: 100%;">
+		<SvelteFlow {nodes} {nodeTypes} fitView={true} minZoom={0.5} maxZoom={2}>
 			<Controls />
 		</SvelteFlow>
 	</div>
-</div>
+{/if}
