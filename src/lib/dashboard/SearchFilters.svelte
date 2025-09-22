@@ -1,7 +1,6 @@
 <script lang="ts">
-	import { Button, Card, Checkbox, Search } from 'flowbite-svelte';
+	import { Button, Card, Search } from 'flowbite-svelte';
 	import { CaretDownOutline, CaretUpOutline, CloseOutline } from 'flowbite-svelte-icons';
-	import { fade } from 'svelte/transition';
 	import { Datepicker } from 'flowbite-svelte';
 
 	interface Filters {
@@ -17,7 +16,24 @@
 		filters: Filters;
 	}
 
-	let { filters }: Props = $props();
+	let { filters = $bindable() }: Props = $props();
+
+	let searchInput = $state(filters.content);
+	let debounceTimer: NodeJS.Timeout;
+
+	$effect(() => {
+		searchInput;
+		clearTimeout(debounceTimer);
+		debounceTimer = setTimeout(() => {
+			filters.content = searchInput;
+		}, 300);
+	});
+
+	$effect(() => {
+		if (filters.content === '') {
+			searchInput = '';
+		}
+	});
 
 	function updateSentiment(sentiment: 'positive' | 'negative' | 'neutral') {
 		filters.sentiment = filters.sentiment === sentiment ? undefined : sentiment;
@@ -32,6 +48,7 @@
 	}
 
 	function clearFilters() {
+		searchInput = '';
 		filters.content = '';
 		filters.sentiment = undefined;
 		filters.status = undefined;
@@ -46,7 +63,7 @@
 		<Search
 			size="md"
 			placeholder="Search..."
-			bind:value={filters.content}
+			bind:value={searchInput}
 			clearable
 			class="rounded-lg bg-gray-50"
 		/>
@@ -104,7 +121,7 @@
 						<label class="mb-1 font-semibold" for="from-date">From</label>
 						<Datepicker
 							id="from-date"
-							value={filters.from}
+							bind:value={filters.from}
 							placeholder="From"
 							class="w-full sm:max-w-xs"
 						/>
@@ -113,7 +130,7 @@
 						<label class="mb-1 font-semibold" for="to-date">To</label>
 						<Datepicker
 							id="to-date"
-							value={filters.to}
+							bind:value={filters.to}
 							placeholder="To"
 							class="w-full sm:max-w-xs"
 						/>
@@ -122,9 +139,9 @@
 				<div class="mt-2 flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
 					<Button size="xs" color="light" class="w-full sm:w-auto" onclick={() => updateVotes()}>
 						{#if filters.votes === 'asc'}
-							<CaretUpOutline /> Vote
-						{:else}
 							<CaretDownOutline /> Vote
+						{:else}
+							<CaretUpOutline /> Vote
 						{/if}
 					</Button>
 					<Button size="xs" color="light" class="w-full sm:w-auto" onclick={() => clearFilters()}>
