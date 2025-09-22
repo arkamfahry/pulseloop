@@ -8,7 +8,7 @@ export const getSentimentsCounts = query({
 
 		for await (const feedback of ctx.db
 			.query('feedbacks')
-			.withIndex('by_status', (q) => q.eq('status', 'open'))) {
+			.withIndex('by_published_sentiment_status_createdAt_votes', (q) => q.eq('published', true))) {
 			if (feedback.sentiment === 'positive') {
 				positive++;
 			} else if (feedback.sentiment === 'negative') {
@@ -37,7 +37,7 @@ export const getOverallSentiment = query({
 
 		for await (const feedback of ctx.db
 			.query('feedbacks')
-			.withIndex('by_status', (q) => q.eq('status', 'open'))) {
+			.withIndex('by_published_sentiment_status_createdAt_votes', (q) => q.eq('published', true))) {
 			if (feedback.sentiment === 'positive') {
 				positive++;
 			} else if (feedback.sentiment === 'negative') {

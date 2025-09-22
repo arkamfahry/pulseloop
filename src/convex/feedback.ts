@@ -261,7 +261,9 @@ export const getFeedbackById = query({
 
 export const listUnpublishedFeedback = query({
 	args: {
-		content: v.optional(v.string())
+		content: v.optional(v.string()),
+		from: v.optional(v.number()),
+		to: v.optional(v.number())
 	},
 	handler: async (ctx, args) => {
 		const tableQuery: QueryInitializer<DataModel['feedbacks']> = ctx.db.query('feedbacks');
@@ -273,10 +275,22 @@ export const listUnpublishedFeedback = query({
 			orderedQuery = tableQuery.withSearchIndex('by_content', (q) =>
 				q.search('content', args.content!).eq('published', false)
 			);
+
+			if (args.from && args.to) {
+				orderedQuery = orderedQuery.filter((q) =>
+					q.and(q.gte(q.field('createdAt'), args.from!), q.lte(q.field('createdAt'), args.to!))
+				);
+			}
 		} else {
-			indexedQuery = tableQuery.withIndex('by_published_sentiment_createdAt_votes', (q) =>
-				q.eq('published', false)
-			);
+			indexedQuery = tableQuery.withIndex('by_published_status_createdAt_votes', (q) => {
+				const expr = q.eq('published', false).eq('status', 'open');
+
+				if (args.from && args.to) {
+					return expr.gte('createdAt', args.from!).lte('createdAt', args.to!);
+				}
+
+				return expr;
+			});
 			orderedQuery = indexedQuery.order('desc');
 		}
 
@@ -615,7 +629,9 @@ export const getOpenFeedbackCount = query({
 	handler: async (ctx) => {
 		const feedbacks = await ctx.db
 			.query('feedbacks')
-			.withIndex('by_status', (q) => q.eq('status', 'open'))
+			.withIndex('by_published_status_createdAt_votes', (q) =>
+				q.eq('published', true).eq('status', 'open')
+			)
 			.collect();
 
 		return feedbacks.length;
