@@ -2,7 +2,7 @@
 	import type { api } from '$convex/_generated/api';
 	import type { FunctionReturnType } from 'convex/server';
 
-	import WordCloudNode from '$lib/WordCloudNode.svelte';
+	import WordCloudNode from '$lib/cloud/WordCloudNode.svelte';
 	import { Controls, SvelteFlow } from '@xyflow/svelte';
 	import '@xyflow/svelte/dist/style.css';
 	import { Spinner } from 'flowbite-svelte';
@@ -24,8 +24,8 @@
 	let placedNodes: Array<{ x: number; y: number; radius: number }> = [];
 
 	function getNodeRadius(count: number, maxCount: number): number {
-		const minRadius = 25; // Reduced from 30
-		const maxRadius = 70; // Reduced from 80
+		const minRadius = 25;
+		const maxRadius = 70;
 		const normalizedSize = count / maxCount;
 		return minRadius + (maxRadius - minRadius) * normalizedSize;
 	}
@@ -33,7 +33,7 @@
 	function checkCollision(x: number, y: number, radius: number): boolean {
 		return placedNodes.some((node) => {
 			const distance = Math.sqrt((x - node.x) ** 2 + (y - node.y) ** 2);
-			// Increased spacing from 2 to 5 for a bit more breathing room
+
 			return distance < radius + node.radius + 5;
 		});
 	}
@@ -53,12 +53,11 @@
 			return { x: centerX, y: centerY };
 		}
 
-		// Start closer to center and use slightly larger increments for more spacing
-		let radius = 35; // Increased from 30
+		let radius = 35;
 		let angle = 0;
-		let spiralStep = 0.4; // Increased from 0.3 for slightly looser spiral
-		let radiusStep = 5; // Increased from 4 for slightly larger radius increments
-		let maxAttempts = 1000; // Add attempt limit to prevent infinite loops
+		let spiralStep = 0.4;
+		let radiusStep = 5;
+		let maxAttempts = 1000;
 		let attempts = 0;
 
 		while (radius < 400 && attempts < maxAttempts) {
@@ -71,14 +70,13 @@
 			}
 
 			angle += spiralStep;
-			// Slightly more gradual radius increase with a bit more spacing
-			radius += (radiusStep * spiralStep) / (3.5 * Math.PI); // Changed divisor from 4π to 3.5π
+
+			radius += (radiusStep * spiralStep) / (3.5 * Math.PI);
 			attempts++;
 		}
 
-		// Tighter fallback positioning
-		const fallbackX = centerX + (Math.random() - 0.5) * 100; // Reduced from 200
-		const fallbackY = centerY + (Math.random() - 0.5) * 100; // Reduced from 200
+		const fallbackX = centerX + (Math.random() - 0.5) * 100;
+		const fallbackY = centerY + (Math.random() - 0.5) * 100;
 		placedNodes.push({ x: fallbackX, y: fallbackY, radius: nodeRadius });
 		return { x: fallbackX, y: fallbackY };
 	}
