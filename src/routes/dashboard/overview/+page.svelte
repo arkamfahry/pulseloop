@@ -4,7 +4,7 @@
 	import SentimentDistributionChart from '$lib/kpi/SentimentDistributionChart.svelte';
 	import SentimentTrendCard from '$lib/kpi/SentimentTrendCard.svelte';
 	import TrendCard from '$lib/kpi/TrendCard.svelte';
-	import TrendChart from '$lib/kpi/WordCloudTrendChart.svelte';
+	import WordCloud from '$lib/cloud/WordCloud.svelte';
 	import '@xyflow/svelte/dist/style.css';
 	import { useQuery } from 'convex-svelte';
 
@@ -34,7 +34,7 @@
 			class="col-span-6 flex min-h-48 flex-col justify-start rounded-2xl border border-gray-200 bg-white p-8 shadow-md dark:border-gray-700 dark:bg-gray-800"
 		>
 			<div class="mb-3 text-lg font-semibold">Trends</div>
-			<TrendChart query={keywordCloudQuery} />
+			<WordCloud query={keywordCloudQuery} />
 		</div>
 	</section>
 
