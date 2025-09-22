@@ -37,7 +37,7 @@
 	async function signOut() {
 		try {
 			await authClient.signOut();
-			goto('/');
+			await goto('/');
 		} catch (error) {
 			console.error('Sign out error:', error);
 		}
