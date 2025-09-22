@@ -16,6 +16,7 @@
 
 		try {
 			await authClient.signIn.email({ email, password });
+			await invalidateAll();
 		} catch (err: any) {
 			if (err?.message) {
 				error = err.message;
@@ -24,7 +25,6 @@
 			}
 		} finally {
 			submitting = false;
-			await invalidateAll();
 		}
 	}
 </script>
