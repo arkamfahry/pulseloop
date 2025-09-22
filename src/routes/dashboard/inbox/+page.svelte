@@ -26,7 +26,7 @@
 
 <main class="flex h-screen min-w-0 flex-col">
 	<section class="sticky top-0 z-10 flex justify-center bg-white">
-		<SearchFilters bind:filters />
+		<SearchFilters type="full" bind:filters />
 	</section>
 
 	<section class="flex min-h-0 flex-1 flex-col items-center gap-4 px-1 pt-4">
