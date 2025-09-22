@@ -60,7 +60,7 @@
 	}
 </script>
 
-<Card class="relative mx-auto max-w-6xl rounded-2xl border border-gray-200 p-4 shadow-sm">
+<Card class="relative mx-auto max-w-7xl rounded-2xl border border-gray-200 p-4 shadow-sm">
 	<div class="flex w-full flex-col">
 		<div class="mb-4 flex w-full items-start justify-between gap-2">
 			<div class="flex items-center gap-2">
