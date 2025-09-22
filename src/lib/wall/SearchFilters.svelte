@@ -16,7 +16,24 @@
 		filters: Filters;
 	}
 
-	let { hidden, filters }: Props = $props();
+	let { hidden, filters = $bindable() }: Props = $props();
+
+	let searchInput = $state(filters.content);
+	let debounceTimer: NodeJS.Timeout;
+
+	$effect(() => {
+		searchInput;
+		clearTimeout(debounceTimer);
+		debounceTimer = setTimeout(() => {
+			filters.content = searchInput;
+		}, 300);
+	});
+
+	$effect(() => {
+		if (filters.content === '') {
+			searchInput = '';
+		}
+	});
 
 	function updateSentiment(sentiment: 'positive' | 'negative' | 'neutral') {
 		filters.sentiment = filters.sentiment === sentiment ? undefined : sentiment;
@@ -34,7 +51,7 @@
 {#if !hidden}
 	<div class="fixed inset-0 z-20 flex items-start justify-center pt-15" transition:fade>
 		<Card class="mx-1 w-full max-w-3xl rounded-xl p-4 shadow-lg">
-			<Search size="md" placeholder="Search..." bind:value={filters.content} clearable />
+			<Search size="md" placeholder="Search..." bind:value={searchInput} clearable />
 
 			<div class="mt-4 flex flex-wrap justify-between gap-4 p-1">
 				<div>
@@ -94,11 +111,11 @@
 
 				<div class="flex flex-col items-end gap-2">
 					<div class="mt-7 flex gap-2">
-						<Button size="xs" outline onclick={() => updateVotes()}>
+						<Button size="xs" color="light" outline onclick={() => updateVotes()}>
 							{#if filters.votes === 'asc'}
-								<CaretUpOutline /> Votes
-							{:else}
 								<CaretDownOutline /> Votes
+							{:else}
+								<CaretUpOutline /> Votes
 							{/if}
 						</Button>
 					</div>

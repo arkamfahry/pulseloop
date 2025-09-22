@@ -25,21 +25,8 @@
 		votes: undefined as 'asc' | 'desc' | undefined
 	});
 
-	let debouncedContent = $state('');
-	let debounceTimeout: ReturnType<typeof setTimeout>;
-
-	$effect(() => {
-		clearTimeout(debounceTimeout);
-		debounceTimeout = setTimeout(() => {
-			debouncedContent = filters.content;
-		}, 500);
-		return () => {
-			clearTimeout(debounceTimeout);
-		};
-	});
-
 	const publishedFeedbackQuery = useQuery(api.feedback.listPublishedFeedback, () => ({
-		content: debouncedContent,
+		content: filters.content,
 		sentiment: filters.sentiment,
 		status: filters.status,
 		myFeedback: filters.myFeedback,
@@ -50,7 +37,7 @@
 <div class="flex min-h-screen flex-col bg-gray-50 dark:bg-gray-900">
 	<Header onSearchToggle={toggleSearch} />
 
-	<SearchFilters {hidden} {filters} />
+	<SearchFilters {hidden} bind:filters />
 
 	<FeedbackList query={publishedFeedbackQuery} />
 
