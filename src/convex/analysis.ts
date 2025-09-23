@@ -158,11 +158,11 @@ PROCESS:
 - Ignore <CODE_BLOCK> and <PII>.
 
 2) KEYWORD EXTRACTION
-- Extract 1-3 meaningful keywords, ordered by importance.
-- Include relevant modifiers that add context:
-  - Adjective + noun pairs: "slow wifi", "broken printer"
-  - Important standalone nouns: "library", "cafeteria", "exam"
-  - Action words when relevant: "crashing", "freezing", "loading"
+- Extract 1-3 meaningful **single-word** keywords, ordered by importance.
+- Only include standalone words (no phrases or multi-word combinations).
+- Focus on:
+  - Strong nouns: "wifi", "printer", "library", "exam"
+  - Action words or verbs when relevant: "crashing", "loading", "disconnecting"
 - Exclude generic/stop words: good, bad, nice, great, love, hate, use, using, because, from, thing, stuff, help, thanks, thank, issue, problem, very, really, quite, just, also, but, and, the, this, that, have, has, get, got, make, made, work, works, working.
 - Fix common spelling errors: "wifi" (not "wi-fi"), "lab" (not "laab"), etc.
 - Keep domain-specific terms: course names, building names, specific services.
@@ -174,9 +174,9 @@ PROCESS:
 - Short posts (≤5 tokens) → emojis/punctuation as tie-breakers; ambiguous → neutral.
 
 EXAMPLES:
-{ "keywords": ["slow wifi", "library", "disconnecting"], "sentiment": "negative" }
-{ "keywords": ["crash", "lab computer"], "sentiment": "negative" }
-{ "keywords": ["cafeteria food", "delicious"], "sentiment": "positive" }
+{ "keywords": ["wifi", "library", "disconnecting"], "sentiment": "negative" }
+{ "keywords": ["crash", "computer"], "sentiment": "negative" }
+{ "keywords": ["cafeteria", "food"], "sentiment": "positive" }
 `;
 
 export const extractFeedbackKeywordsAndSentiment = internalAction({
