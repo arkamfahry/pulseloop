@@ -71,7 +71,7 @@
 	class={`flex items-center justify-center rounded-xl border-2 shadow-sm transition-all duration-300 hover:shadow-lg ${bgClass} ${borderClass} ${dynamicClasses().paddingClass}`}
 	style="transform: scale({nodeSize().scale}); transform-origin: center;"
 >
-	<button>
+	<button class="cursor-pointer">
 		<span class={`font-semibold ${textClass} ${dynamicClasses().fontSizeClass}`}>
 			{data.keyword}
 		</span>
