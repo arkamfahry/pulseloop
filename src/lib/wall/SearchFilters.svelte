@@ -50,7 +50,7 @@
 
 {#if !hidden}
 	<div class="fixed inset-0 z-20 flex items-start justify-center pt-15" transition:fade>
-		<Card class="mx-1 w-full max-w-3xl rounded-xl p-4 shadow-lg">
+		<Card class="mx-1 w-full max-w-3xl rounded-xl p-4 shadow-md">
 			<Search size="md" placeholder="Search..." bind:value={searchInput} clearable />
 
 			<div class="mt-4 flex flex-wrap justify-between gap-4 p-1">
