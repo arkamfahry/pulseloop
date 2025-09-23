@@ -54,13 +54,13 @@ export const getOverallSentiment = query({
 		if (total > 0) {
 			if (positive >= negative && positive >= neutral) {
 				sentiment = 'positive';
-				percentage = (positive / total) * 100;
+				percentage = Math.round((positive / total) * 100);
 			} else if (negative >= positive && negative >= neutral) {
 				sentiment = 'negative';
-				percentage = (negative / total) * 100;
+				percentage = Math.round((negative / total) * 100);
 			} else {
 				sentiment = 'neutral';
-				percentage = (neutral / total) * 100;
+				percentage = Math.round((neutral / total) * 100);
 			}
 		}
 
