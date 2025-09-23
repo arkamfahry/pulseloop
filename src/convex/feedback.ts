@@ -166,14 +166,12 @@ export const deleteFeedback = mutation({
 			throw new Error('Feedback not found');
 		}
 
-		if (!feedback.keywords?.length || !feedback.sentiment) {
-			return;
+		if (feedback.keywords && feedback.keywords.length > 0) {
+			await ctx.runMutation(internal.keyword.removeKeywords, {
+				keywords: feedback.keywords,
+				feedbackId: args.feedbackId
+			});
 		}
-
-		await ctx.runMutation(internal.keyword.removeKeywords, {
-			keywords: feedback.keywords,
-			feedbackId: args.feedbackId
-		});
 
 		if (feedback.embeddingId) {
 			await ctx.db.delete(feedback.embeddingId);
