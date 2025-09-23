@@ -24,7 +24,7 @@
 </script>
 
 <main class="flex h-screen min-w-0 flex-col">
-	<section class="flex justify-center bg-white">
+	<section class="flex justify-center">
 		<SearchFilters type="full" bind:filters />
 	</section>
 
