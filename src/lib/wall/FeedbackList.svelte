@@ -16,7 +16,7 @@
 	let props: Props = $props();
 </script>
 
-<main class="flex flex-1 flex-col items-center px-1 py-2 md:py-4">
+<main class="flex flex-1 flex-col items-center px-1 py-2">
 	<div class="w-full max-w-3xl space-y-1">
 		{#if props.query.isLoading}
 			<div class="flex h-screen items-center justify-center">
