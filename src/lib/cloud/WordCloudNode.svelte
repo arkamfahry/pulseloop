@@ -71,9 +71,11 @@
 	class={`flex items-center justify-center rounded-xl border-2 shadow-sm transition-all duration-300 hover:shadow-lg ${bgClass} ${borderClass} ${dynamicClasses().paddingClass}`}
 	style="transform: scale({nodeSize().scale}); transform-origin: center;"
 >
-	<span class={`font-semibold ${textClass} ${dynamicClasses().fontSizeClass}`}>
-		{data.keyword}
-	</span>
+	<button>
+		<span class={`font-semibold ${textClass} ${dynamicClasses().fontSizeClass}`}>
+			{data.keyword}
+		</span>
+	</button>
 	{#if (data.count as number) > 1}
 		<span
 			class={`ml-2 rounded-full px-2 py-0.5 text-xs ${bgClass} ${borderClass} border opacity-75`}

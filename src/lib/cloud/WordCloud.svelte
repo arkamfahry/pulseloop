@@ -33,8 +33,7 @@
 	function checkCollision(x: number, y: number, radius: number): boolean {
 		return placedNodes.some((node) => {
 			const distance = Math.sqrt((x - node.x) ** 2 + (y - node.y) ** 2);
-
-			return distance < radius + node.radius + 5;
+			return distance < radius + node.radius + 12;
 		});
 	}
 
@@ -53,14 +52,14 @@
 			return { x: centerX, y: centerY };
 		}
 
-		let radius = 35;
+		let radius = 45;
 		let angle = 0;
-		let spiralStep = 0.4;
-		let radiusStep = 5;
-		let maxAttempts = 1000;
+		let spiralStep = 0.3;
+		let radiusStep = 6;
+		let maxAttempts = 10000;
 		let attempts = 0;
 
-		while (radius < 400 && attempts < maxAttempts) {
+		while (attempts < maxAttempts) {
 			const x = centerX + Math.cos(angle) * radius;
 			const y = centerY + Math.sin(angle) * radius;
 
@@ -70,13 +69,14 @@
 			}
 
 			angle += spiralStep;
-
 			radius += (radiusStep * spiralStep) / (3.5 * Math.PI);
 			attempts++;
 		}
 
-		const fallbackX = centerX + (Math.random() - 0.5) * 100;
-		const fallbackY = centerY + (Math.random() - 0.5) * 100;
+		const fallbackDistance = radius + 100;
+		const fallbackAngle = Math.random() * 2 * Math.PI;
+		const fallbackX = centerX + Math.cos(fallbackAngle) * fallbackDistance;
+		const fallbackY = centerY + Math.sin(fallbackAngle) * fallbackDistance;
 		placedNodes.push({ x: fallbackX, y: fallbackY, radius: nodeRadius });
 		return { x: fallbackX, y: fallbackY };
 	}
@@ -125,7 +125,14 @@
 	</div>
 {:else}
 	<div style="height: 100%; width: 100%;">
-		<SvelteFlow {nodes} {nodeTypes} fitView={true} minZoom={0.5} maxZoom={2}>
+		<SvelteFlow
+			{nodes}
+			{nodeTypes}
+			onnodeclick={(event) => console.log('Node clicked:', event.node.id)}
+			fitView={true}
+			minZoom={1}
+			maxZoom={2}
+		>
 			<Controls />
 		</SvelteFlow>
 	</div>

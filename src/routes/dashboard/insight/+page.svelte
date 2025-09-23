@@ -30,7 +30,7 @@
 
 	<section class="flex min-h-0 flex-1 flex-col items-center gap-4 px-1 pt-4">
 		<div
-			class="flex h-96 w-full max-w-7xl flex-col rounded-2xl border border-gray-200 bg-white p-8 shadow-md dark:border-gray-700 dark:bg-gray-800"
+			class="flex h-[30rem] w-full max-w-7xl flex-col rounded-2xl border border-gray-200 bg-white p-8 shadow-md dark:border-gray-700 dark:bg-gray-800"
 		>
 			<div class="h-full w-full flex-1">
 				<WordCloud query={keywordCloudQuery} />
