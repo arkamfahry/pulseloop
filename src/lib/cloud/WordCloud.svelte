@@ -13,6 +13,7 @@
 			data: FunctionReturnType<typeof api.keyword.getKeywordCloud> | null | undefined;
 			error?: Error | null;
 		};
+		onNodeClick?: (id: string) => void;
 	}
 
 	let props: Props = $props();
@@ -128,7 +129,7 @@
 		<SvelteFlow
 			{nodes}
 			{nodeTypes}
-			onnodeclick={(event) => console.log('Node clicked:', event.node.id)}
+			onnodeclick={(event) => props.onNodeClick?.(event.node.id)}
 			fitView={true}
 			minZoom={1}
 			maxZoom={2}
