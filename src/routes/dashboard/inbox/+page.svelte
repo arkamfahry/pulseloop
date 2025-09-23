@@ -24,12 +24,12 @@
 	}));
 </script>
 
-<main class="flex h-screen min-w-0 flex-col">
-	<section class="sticky top-0 z-10 flex justify-center">
+<div class="flex h-screen min-w-0 flex-col">
+	<section class="sticky top-0 z-10 flex justify-center bg-white">
 		<SearchFilters type="full" bind:filters />
 	</section>
 
-	<section class="flex min-h-0 flex-1 flex-col items-center gap-4 px-1 pt-4">
+	<section class="flex min-h-0 flex-1 flex-col items-center gap-2 pt-4">
 		{#if publishedFeedbackQuery.isLoading}
 			<div class="flex h-full items-center justify-center">
 				<Spinner />
@@ -53,4 +53,4 @@
 			<p class="text-gray-500">No feedback found.</p>
 		{/if}
 	</section>
-</main>
+</div>

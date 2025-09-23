@@ -59,7 +59,7 @@
 	}
 </script>
 
-<Card class="mx-1 w-full max-w-7xl rounded-xl p-6 shadow-md">
+<Card class="w-full max-w-7xl rounded-xl p-6 shadow-md">
 	<div class="flex flex-col gap-4">
 		<Search
 			size="md"

@@ -26,7 +26,7 @@
 		<SearchFilters type="simple" bind:filters />
 	</section>
 
-	<section class="flex min-h-0 flex-1 flex-col items-center gap-4 px-1 pt-4">
+	<section class="flex min-h-0 flex-1 flex-col items-center gap-2 px-1 pt-4">
 		{#if unpublishedFeedbackQuery.isLoading}
 			<div class="flex h-full items-center justify-center">
 				<Spinner />

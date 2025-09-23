@@ -16,7 +16,7 @@
 	const topFeedbackQuery = useQuery(api.feedback.getTopFeedback, {});
 </script>
 
-<main class="flex min-w-0 flex-col gap-6">
+<div class="flex min-w-0 flex-col gap-6">
 	<section class="grid grid-cols-3 gap-6">
 		<TrendCard heading="Total Feedback" query={totalFeedbackCountQuery} />
 		<TrendCard heading="Open Feedback" query={openFeedbackCountQuery} />
@@ -25,13 +25,13 @@
 
 	<section class="grid grid-cols-10 gap-6">
 		<div
-			class="col-span-4 flex min-h-48 flex-col justify-start rounded-2xl border border-gray-200 bg-white p-8 shadow-md dark:border-gray-700 dark:bg-gray-800"
+			class="col-span-4 flex min-h-48 flex-col justify-start rounded-2xl border border-gray-200 bg-white p-6 shadow-md dark:border-gray-700 dark:bg-gray-800"
 		>
 			<div class="mb-3 text-lg font-semibold">Sentiment</div>
 			<SentimentDistributionChart query={sentimentCountsQuery} />
 		</div>
 		<div
-			class="col-span-6 flex min-h-48 flex-col justify-start rounded-2xl border border-gray-200 bg-white p-8 shadow-md dark:border-gray-700 dark:bg-gray-800"
+			class="col-span-6 flex min-h-48 flex-col justify-start rounded-2xl border border-gray-200 bg-white p-6 shadow-md dark:border-gray-700 dark:bg-gray-800"
 		>
 			<div class="mb-3 text-lg font-semibold">Trends</div>
 			<WordCloud query={keywordCloudQuery} />
@@ -44,4 +44,4 @@
 		<div class="mb-3 text-lg font-semibold">Top Feedback</div>
 		<TopFeedbackList query={topFeedbackQuery} />
 	</section>
-</main>
+</div>

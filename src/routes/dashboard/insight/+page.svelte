@@ -50,12 +50,12 @@
 	});
 </script>
 
-<main class="flex h-screen min-w-0 flex-col">
-	<section class="flex justify-center">
+<div class="flex h-screen min-w-0 flex-col">
+	<section class="flex justify-center bg-white">
 		<SearchFilters type="full" bind:filters />
 	</section>
 
-	<section class="flex min-h-0 flex-1 flex-row items-start gap-4 px-1 pt-4">
+	<section class="flex min-h-0 flex-1 flex-row items-start gap-4 pt-4">
 		<div
 			class="flex h-[30rem] flex-1 flex-col rounded-2xl border border-gray-200 bg-white p-4 shadow-md dark:border-gray-700 dark:bg-gray-800"
 		>
@@ -66,19 +66,15 @@
 
 		{#if listFeedback !== null}
 			<div
-				class="relative flex h-[30rem] flex-1 flex-col overflow-y-auto rounded-2xl border border-gray-200 bg-white p-4 shadow-md dark:border-gray-700 dark:bg-gray-800"
+				class="relative flex h-[30rem] flex-1 flex-col rounded-2xl border border-gray-200 bg-white p-4 shadow-md dark:border-gray-700 dark:bg-gray-800"
 			>
-				<div class="mb-8 flex items-center justify-between">
-					<Button
-						class="absolute top-2 right-2 z-10 p-1"
-						color="light"
-						size="sm"
-						onclick={() => resetSelectedKeyword()}
-					>
+				<div class="absolute top-2 right-2 z-10">
+					<Button class="p-1" color="light" size="sm" onclick={() => resetSelectedKeyword()}>
 						<CloseOutline size="md" />
 					</Button>
 				</div>
-				<div>
+
+				<div class="mt-8 flex flex-1 flex-col gap-2 overflow-y-auto">
 					{#if listFeedback.isLoading}
 						<div class="flex h-full items-center justify-center">
 							<Spinner />
@@ -107,4 +103,4 @@
 			</div>
 		{/if}
 	</section>
-</main>
+</div>
