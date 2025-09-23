@@ -49,7 +49,7 @@
 	class="relative mx-auto max-w-3xl rounded-2xl border border-gray-200 p-4 shadow dark:border-gray-700"
 >
 	<div class="flex w-full flex-col">
-		<div class="mb-4 flex w-full items-start justify-between gap-2">
+		<div class="mb-2 flex w-full items-start justify-between gap-2">
 			<div class="flex items-center gap-2">
 				<span class="font-semibold text-gray-900 dark:text-white"
 					>{props.userName ?? 'Anonymous'}</span
@@ -63,16 +63,17 @@
 				>
 			</div>
 			<div class="flex items-center justify-end">
-				<Button color="light" size="sm" onclick={() => toggleFeedbackVote()}>
-					<CaretUpOutline size="sm" />
-					{props.votes}
+				<Button color="light" size="sm" class="px-2 py-1" onclick={() => toggleFeedbackVote()}>
+					<CaretUpOutline size="sm" /> <span class="ml-1">{props.votes}</span>
 				</Button>
 			</div>
 		</div>
-		<p class="mb-4 text-base leading-relaxed text-gray-900 dark:text-gray-300">
-			{props.content}
-		</p>
-		<div class="mt-4 flex w-full flex-row items-start justify-between gap-2">
+		<div class="mb-4 flex w-full items-start justify-between gap-2">
+			<p class="text-base leading-relaxed text-gray-900">
+				{props.content}
+			</p>
+		</div>
+		<div class="flex w-full flex-row items-start justify-between gap-2">
 			<div class="flex min-w-0 flex-1 flex-wrap gap-2">
 				{#each props.keywords as keyword}
 					<Badge

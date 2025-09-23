@@ -62,7 +62,7 @@
 
 <Card class="relative mx-auto max-w-7xl rounded-2xl border border-gray-200 p-4 shadow-sm">
 	<div class="flex w-full flex-col">
-		<div class="mb-4 flex w-full items-start justify-between gap-2">
+		<div class="mb-2 flex w-full items-start justify-between gap-2">
 			<div class="flex items-center gap-2">
 				<Checkbox />
 				<span class="truncate text-sm font-semibold text-gray-900">{props.userName}</span>
@@ -94,10 +94,12 @@
 				</Button>
 			</div>
 		</div>
-		<p class="mb-4 text-base leading-relaxed text-gray-900">
-			{props.content}
-		</p>
-		<div class="mt-4 flex flex-wrap items-center justify-between gap-2">
+		<div class="mb-4 flex w-full items-start justify-between gap-2">
+			<p class="text-base leading-relaxed text-gray-900">
+				{props.content}
+			</p>
+		</div>
+		<div class="flex flex-wrap items-center justify-between gap-2">
 			<div class="flex flex-wrap gap-2">
 				{#each props.keywords as keyword}
 					<Badge
