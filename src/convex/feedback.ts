@@ -575,11 +575,14 @@ export const searchPublishedFeedback = query({
 
 export const getTopFeedback = query({
 	handler: async (ctx) => {
-		const feedbacks = await ctx.db
+		let feedbacks = await ctx.db
 			.query('feedbacks')
-			.withIndex('by_published_sentiment', (q) => q.eq('published', true))
-			.order('desc')
+			.withIndex('by_published_sentiment_status', (q) =>
+				q.eq('published', true).eq('sentiment', 'negative').eq('status', 'open')
+			)
 			.collect();
+
+		feedbacks = feedbacks.sort((a, b) => b.votes - a.votes);
 
 		const feedbacksWithUsers = await Promise.all(
 			feedbacks.map(async (feedback) => {
