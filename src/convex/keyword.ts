@@ -110,51 +110,21 @@ export const getKeywordCloud = query({
 
 				return expr;
 			});
-
-			if (args.from && args.to) {
-				orderedQuery = orderedQuery.filter((q) =>
-					q.and(q.gte(q.field('createdAt'), args.from!), q.lte(q.field('createdAt'), args.to!))
-				);
-			}
 		} else {
 			if (args.sentiment && args.status) {
-				indexedQuery = tableQuery.withIndex(
-					'by_published_sentiment_status_createdAt_votes',
-					(q) => {
-						const expr = q
-							.eq('published', true)
-							.eq('sentiment', args.sentiment!)
-							.eq('status', args.status!);
-
-						if (args.from && args.to) {
-							return expr.gte('createdAt', args.from!).lte('createdAt', args.to!);
-						}
-
-						return expr;
-					}
+				indexedQuery = tableQuery.withIndex('by_published_sentiment_status', (q) =>
+					q.eq('published', true).eq('sentiment', args.sentiment!).eq('status', args.status!)
 				);
 			} else if (args.sentiment) {
-				indexedQuery = tableQuery.withIndex('by_published_sentiment_createdAt_votes', (q) => {
-					const expr = q.eq('published', true).eq('sentiment', args.sentiment!);
-
-					if (args.from && args.to) {
-						return expr.gte('createdAt', args.from!).lte('createdAt', args.to!);
-					}
-
-					return expr;
-				});
+				indexedQuery = tableQuery.withIndex('by_published_sentiment', (q) =>
+					q.eq('published', true).eq('sentiment', args.sentiment!)
+				);
 			} else if (args.status) {
-				indexedQuery = tableQuery.withIndex('by_published_status_createdAt_votes', (q) => {
-					const expr = q.eq('published', true).eq('status', args.status!);
-
-					if (args.from && args.to) {
-						return expr.gte('createdAt', args.from!).lte('createdAt', args.to!);
-					}
-
-					return expr;
-				});
+				indexedQuery = tableQuery.withIndex('by_published_status', (q) =>
+					q.eq('published', true).eq('status', args.status!)
+				);
 			} else {
-				indexedQuery = tableQuery.withIndex('by_published_sentiment_createdAt_votes', (q) =>
+				indexedQuery = tableQuery.withIndex('by_published_sentiment', (q) =>
 					q.eq('published', true)
 				);
 			}
@@ -164,6 +134,15 @@ export const getKeywordCloud = query({
 			} else {
 				orderedQuery = indexedQuery.order('desc');
 			}
+		}
+
+		if (args.from && args.to) {
+			orderedQuery = orderedQuery.filter((q) =>
+				q.and(
+					q.gte(q.field('_creationTime'), args.from!),
+					q.lte(q.field('_creationTime'), args.to!)
+				)
+			);
 		}
 
 		type Sentiment = 'positive' | 'negative' | 'neutral';

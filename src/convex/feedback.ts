@@ -22,8 +22,7 @@ export const submitFeedback = mutation({
 			userId: userId as Id<'users'>,
 			status: 'open',
 			votes: 0,
-			published: false,
-			createdAt: Date.now()
+			published: false
 		});
 
 		const feedback = await ctx.db.get(feedbackId);
@@ -273,23 +272,21 @@ export const listUnpublishedFeedback = query({
 			orderedQuery = tableQuery.withSearchIndex('by_content', (q) =>
 				q.search('content', args.content!).eq('published', false)
 			);
-
-			if (args.from && args.to) {
-				orderedQuery = orderedQuery.filter((q) =>
-					q.and(q.gte(q.field('createdAt'), args.from!), q.lte(q.field('createdAt'), args.to!))
-				);
-			}
 		} else {
-			indexedQuery = tableQuery.withIndex('by_published_status_createdAt_votes', (q) => {
-				const expr = q.eq('published', false).eq('status', 'open');
+			indexedQuery = tableQuery.withIndex('by_published_status', (q) =>
+				q.eq('published', false).eq('status', 'open')
+			);
 
-				if (args.from && args.to) {
-					return expr.gte('createdAt', args.from!).lte('createdAt', args.to!);
-				}
-
-				return expr;
-			});
 			orderedQuery = indexedQuery.order('desc');
+		}
+
+		if (args.from && args.to) {
+			orderedQuery = orderedQuery.filter((q) =>
+				q.and(
+					q.gte(q.field('_creationTime'), args.from!),
+					q.lte(q.field('_creationTime'), args.to!)
+				)
+			);
 		}
 
 		feedbacks = await orderedQuery.collect();
@@ -326,9 +323,11 @@ export const listPublishedFeedback = query({
 			if (!userId) {
 				throw new Error('User not authenticated');
 			}
-			indexedQuery = tableQuery.withIndex('by_userId_published_votes', (q) =>
+
+			indexedQuery = tableQuery.withIndex('by_userId_published', (q) =>
 				q.eq('userId', userId as Id<'users'>).eq('published', true)
 			);
+
 			orderedQuery = indexedQuery.order('desc');
 
 			feedbacks = await orderedQuery.collect();
@@ -376,42 +375,30 @@ export const listPublishedFeedback = query({
 				}
 			} else {
 				if (args.sentiment && args.status) {
-					indexedQuery = tableQuery.withIndex(
-						'by_published_sentiment_status_createdAt_votes',
-						(q) => {
-							const expr = q
-								.eq('published', true)
-								.eq('sentiment', args.sentiment!)
-								.eq('status', args.status!);
-
-							return expr;
-						}
+					indexedQuery = tableQuery.withIndex('by_published_sentiment_status', (q) =>
+						q.eq('published', true).eq('sentiment', args.sentiment!).eq('status', args.status!)
 					);
 				} else if (args.sentiment) {
-					indexedQuery = tableQuery.withIndex('by_published_sentiment_createdAt_votes', (q) => {
-						const expr = q.eq('published', true).eq('sentiment', args.sentiment!);
-
-						return expr;
-					});
+					indexedQuery = tableQuery.withIndex('by_published_sentiment', (q) =>
+						q.eq('published', true).eq('sentiment', args.sentiment!)
+					);
 				} else if (args.status) {
-					indexedQuery = tableQuery.withIndex('by_published_status_createdAt_votes', (q) => {
-						const expr = q.eq('published', true).eq('status', args.status!);
-
-						return expr;
-					});
+					indexedQuery = tableQuery.withIndex('by_published_status', (q) =>
+						q.eq('published', true).eq('status', args.status!)
+					);
 				} else {
-					indexedQuery = tableQuery.withIndex('by_published_sentiment_createdAt_votes', (q) =>
+					indexedQuery = tableQuery.withIndex('by_published_sentiment', (q) =>
 						q.eq('published', true)
 					);
 				}
 
-				if (args.votes === 'asc') {
-					orderedQuery = indexedQuery.order('asc');
-				} else {
-					orderedQuery = indexedQuery.order('desc');
-				}
+				feedbacks = await indexedQuery.collect();
 
-				feedbacks = await orderedQuery.collect();
+				if (args.votes === 'asc') {
+					feedbacks = feedbacks.sort((a, b) => a.votes - b.votes);
+				} else {
+					feedbacks = feedbacks.sort((a, b) => b.votes - a.votes);
+				}
 			}
 		}
 
@@ -460,8 +447,14 @@ export const listPublishedFeedbackByKeywordId = query({
 
 		if (args.from && args.to) {
 			feedbacks = feedbacks.filter(
-				(fb) => fb && fb.createdAt >= args.from! && fb.createdAt <= args.to!
+				(fb) => fb && fb._creationTime >= args.from! && fb._creationTime <= args.to!
 			);
+		}
+
+		if (args.votes === 'asc') {
+			feedbacks = feedbacks.sort((a, b) => (a && b ? a.votes - b.votes : 0));
+		} else {
+			feedbacks = feedbacks.sort((a, b) => (a && b ? b.votes - a.votes : 0));
 		}
 
 		const feedbacksWithUsers = await Promise.all(
@@ -512,7 +505,10 @@ export const searchPublishedFeedback = query({
 
 			if (args.from && args.to) {
 				orderedQuery = orderedQuery.filter((q) =>
-					q.and(q.gte(q.field('createdAt'), args.from!), q.lte(q.field('createdAt'), args.to!))
+					q.and(
+						q.gte(q.field('_creationTime'), args.from!),
+						q.lte(q.field('_creationTime'), args.to!)
+					)
 				);
 			}
 
@@ -525,43 +521,19 @@ export const searchPublishedFeedback = query({
 			}
 		} else {
 			if (args.sentiment && args.status) {
-				indexedQuery = tableQuery.withIndex(
-					'by_published_sentiment_status_createdAt_votes',
-					(q) => {
-						const expr = q
-							.eq('published', true)
-							.eq('sentiment', args.sentiment!)
-							.eq('status', args.status!);
-
-						if (args.from && args.to) {
-							return expr.gte('createdAt', args.from!).lte('createdAt', args.to!);
-						}
-
-						return expr;
-					}
+				indexedQuery = tableQuery.withIndex('by_published_sentiment_status', (q) =>
+					q.eq('published', true).eq('sentiment', args.sentiment!).eq('status', args.status!)
 				);
 			} else if (args.sentiment) {
-				indexedQuery = tableQuery.withIndex('by_published_sentiment_createdAt_votes', (q) => {
-					const expr = q.eq('published', true).eq('sentiment', args.sentiment!);
-
-					if (args.from && args.to) {
-						return expr.gte('createdAt', args.from!).lte('createdAt', args.to!);
-					}
-
-					return expr;
-				});
+				indexedQuery = tableQuery.withIndex('by_published_sentiment', (q) =>
+					q.eq('published', true).eq('sentiment', args.sentiment!)
+				);
 			} else if (args.status) {
-				indexedQuery = tableQuery.withIndex('by_published_status_createdAt_votes', (q) => {
-					const expr = q.eq('published', true).eq('status', args.status!);
-
-					if (args.from && args.to) {
-						return expr.gte('createdAt', args.from!).lte('createdAt', args.to!);
-					}
-
-					return expr;
-				});
+				indexedQuery = tableQuery.withIndex('by_published_status', (q) =>
+					q.eq('published', true).eq('status', args.status!)
+				);
 			} else {
-				indexedQuery = tableQuery.withIndex('by_published_sentiment_createdAt_votes', (q) =>
+				indexedQuery = tableQuery.withIndex('by_published_sentiment', (q) =>
 					q.eq('published', true)
 				);
 			}
@@ -572,7 +544,22 @@ export const searchPublishedFeedback = query({
 				orderedQuery = indexedQuery.order('desc');
 			}
 
+			if (args.from && args.to) {
+				indexedQuery = indexedQuery.filter((q) =>
+					q.and(
+						q.gte(q.field('_creationTime'), args.from!),
+						q.lte(q.field('_creationTime'), args.to!)
+					)
+				);
+			}
+
 			feedbacks = await orderedQuery.collect();
+
+			if (args.votes === 'asc') {
+				feedbacks = feedbacks.sort((a, b) => a.votes - b.votes);
+			} else {
+				feedbacks = feedbacks.sort((a, b) => b.votes - a.votes);
+			}
 		}
 
 		const feedbacksWithUsers = await Promise.all(
@@ -590,9 +577,9 @@ export const getTopFeedback = query({
 	handler: async (ctx) => {
 		const feedbacks = await ctx.db
 			.query('feedbacks')
-			.withIndex('by_published_sentiment_createdAt_votes', (q) => q.eq('published', true))
+			.withIndex('by_published_sentiment', (q) => q.eq('published', true))
 			.order('desc')
-			.take(10);
+			.collect();
 
 		const feedbacksWithUsers = await Promise.all(
 			feedbacks.map(async (feedback) => {
@@ -627,9 +614,7 @@ export const getOpenFeedbackCount = query({
 	handler: async (ctx) => {
 		const feedbacks = await ctx.db
 			.query('feedbacks')
-			.withIndex('by_published_status_createdAt_votes', (q) =>
-				q.eq('published', true).eq('status', 'open')
-			)
+			.withIndex('by_published_status', (q) => q.eq('published', true).eq('status', 'open'))
 			.collect();
 
 		return feedbacks.length;
