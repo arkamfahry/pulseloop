@@ -4,7 +4,7 @@
 	import { useQuery } from 'convex-svelte';
 	import WordCloud from '$lib/cloud/WordCloud.svelte';
 	import type { Id } from '$convex/_generated/dataModel';
-	import { Button, Spinner } from 'flowbite-svelte';
+	import { Button, Checkbox, Spinner } from 'flowbite-svelte';
 	import FeedbackCard from '$lib/dashboard/FeedbackCard.svelte';
 	import { CloseOutline } from 'flowbite-svelte-icons';
 
@@ -74,6 +74,10 @@
 					</Button>
 				</div>
 
+				<div class="absolute top-3 left-3 z-10">
+					<Checkbox />
+				</div>
+
 				<div class="mt-8 flex flex-1 flex-col gap-2 overflow-y-auto">
 					{#if listFeedback.isLoading}
 						<div class="flex h-full items-center justify-center">
@@ -87,7 +91,7 @@
 								<FeedbackCard
 									id={feedback._id}
 									userName={feedback.user?.name ?? 'Anonymous'}
-									date={feedback.createdAt}
+									date={feedback._creationTime}
 									votes={feedback.votes}
 									content={feedback.content}
 									keywords={feedback.keywords ?? []}

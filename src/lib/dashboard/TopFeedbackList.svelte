@@ -15,7 +15,7 @@
 	let props: Props = $props();
 </script>
 
-<div class="mt-4 flex flex-col gap-4">
+<div class="mt-4 flex h-96 flex-col gap-4 overflow-y-auto">
 	{#if props.query.isLoading}
 		<div class="flex h-full flex-1 items-center justify-center">
 			<Spinner />
@@ -27,7 +27,7 @@
 			<FeedbackCard
 				id={feedback._id}
 				userName={feedback.user?.name ?? 'Anonymous'}
-				date={feedback.createdAt}
+				date={feedback._creationTime}
 				votes={feedback.votes}
 				content={feedback.content}
 				keywords={feedback.keywords ?? []}

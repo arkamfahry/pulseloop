@@ -41,7 +41,7 @@
 				<FeedbackCard
 					id={feedback._id}
 					userName={feedback.user?.name ?? 'Anonymous'}
-					date={feedback.createdAt}
+					date={feedback._creationTime}
 					votes={feedback.votes}
 					content={feedback.content}
 					keywords={feedback.keywords ?? []}

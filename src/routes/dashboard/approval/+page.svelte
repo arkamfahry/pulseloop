@@ -38,7 +38,7 @@
 				<FeedBackApprovalCard
 					id={feedback._id}
 					userName={feedback.user?.name ?? 'Anonymous'}
-					date={feedback.createdAt}
+					date={feedback._creationTime}
 					content={feedback.content}
 					votes={feedback.votes}
 				/>
