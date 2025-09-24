@@ -51,7 +51,7 @@
 </script>
 
 <div class="flex h-screen min-w-0 flex-col">
-	<section class="flex justify-center bg-white">
+	<section class="flex justify-center bg-white pt-4">
 		<SearchFilters type="full" bind:filters />
 	</section>
 

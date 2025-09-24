@@ -25,11 +25,11 @@
 </script>
 
 <div class="flex h-screen min-w-0 flex-col">
-	<section class="sticky top-0 z-10 flex justify-center bg-white">
+	<section class="sticky z-10 flex justify-center bg-white pt-4">
 		<SearchFilters type="full" bind:filters />
 	</section>
 
-	<section class="flex min-h-0 flex-1 flex-col items-center gap-2 pt-4">
+	<section class="flex flex-1 flex-col items-center gap-2 overflow-y-auto py-4">
 		{#if publishedFeedbackQuery.isLoading}
 			<div class="flex h-full items-center justify-center">
 				<Spinner />

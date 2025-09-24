@@ -16,8 +16,8 @@
 	const topFeedbackQuery = useQuery(api.feedback.getTopFeedback, {});
 </script>
 
-<div class="flex min-w-0 flex-col gap-6">
-	<section class="grid grid-cols-3 gap-6">
+<div class="flex min-w-0 flex-col gap-4">
+	<section class="grid grid-cols-3 place-items-center gap-8 pt-4">
 		<TrendCard heading="Total Feedback" query={totalFeedbackCountQuery} />
 		<TrendCard heading="Open Feedback" query={openFeedbackCountQuery} />
 		<SentimentTrendCard heading="Overall Sentiment" query={overallSentimentQuery} />
@@ -39,7 +39,7 @@
 	</section>
 
 	<section
-		class="flex min-h-40 flex-col rounded-2xl border border-gray-200 bg-white p-8 shadow-md dark:border-gray-700 dark:bg-gray-800"
+		class="flex min-h-40 flex-col rounded-2xl border border-gray-200 bg-white p-6 shadow-md dark:border-gray-700 dark:bg-gray-800"
 	>
 		<div class="mb-3 text-lg font-semibold">Top Feedback</div>
 		<TopFeedbackList query={topFeedbackQuery} />
