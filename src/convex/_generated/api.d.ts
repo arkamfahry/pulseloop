@@ -15,6 +15,7 @@ import type * as http from "../http.js";
 import type * as index from "../index.js";
 import type * as keyword from "../keyword.js";
 import type * as sentiment from "../sentiment.js";
+import type * as summarize from "../summarize.js";
 import type * as user from "../user.js";
 import type * as workflow from "../workflow.js";
 
@@ -40,6 +41,7 @@ declare const fullApi: ApiFromModules<{
   index: typeof index;
   keyword: typeof keyword;
   sentiment: typeof sentiment;
+  summarize: typeof summarize;
   user: typeof user;
   workflow: typeof workflow;
 }>;
