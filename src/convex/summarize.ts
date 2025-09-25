@@ -6,39 +6,35 @@ import { internal } from './_generated/api';
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const summarizeFeedbackPrompt = `
-You are an AI assistant tasked with summarizing user feedback for a product team. Input: a JSON array of feedback objects named "feedback" ({CONTENT}). Each object contains "keyword", "sentiment", and "content". Follow these rules EXACTLY and return exactly one JSON object (no extra text).
+You are an AI assistant tasked with generating a clean, simple, and consistent HTML summary of user feedback. Your input is a JSON array of feedback objects named "feedback" ({CONTENT}). Follow these rules EXACTLY and return exactly one JSON object.
 
-1) ANALYSIS & SYNTHESIS
-- Analyze the entire array of feedback objects to identify the most critical and frequent themes.
-- Group similar feedback points together, even if their keywords or phrasing differ.
-- Prioritize insights that are actionable or highlight significant user satisfaction or pain points.
-- Note the overall sentiment trend (e.g., mostly positive, mixed with specific concerns, etc.).
+1.  **Analysis & Synthesis:**
+    *   Analyze the entire feedback array to identify the overall sentiment, key themes, actionable insights, and representative quotes.
+    *   Synthesize the information concisely. Do not invent information or use overly complex language.
 
-2) SUMMARIZATION RULES
-- Generate a summary that is **concise, neutral, and objective**.
-- The summary must be a single paragraph, no more than 4-5 sentences.
-- **Do not** use bullet points, lists, or markdown formatting in the summary text.
-- Start the summary with a high-level overview of the general sentiment.
-- Follow with 2-3 sentences detailing the key themes or recurring topics (e.g., "Many users praised the new UI, but several reported issues with login performance and a lack of customization options.").
-- Conclude with a final sentence that captures any secondary but notable points.
-- **Do not** invent new information or directly quote from the feedback content. Synthesize the ideas.
+2.  **HTML Output Structure & Formatting Rules:**
+    *   The entire summary must be a single, valid HTML string.
+    *   Use a paragraph tag (\`<p>\`) for sections that contain a single line of text, like "Overall Sentiment" and "Actionable Insight".
+    *   **To create a simple line break between sections, place a single break tag (\`<br>\`) after the closing tag of each section, except for the very last one.**
+    *   Use a \`<strong>\` tag for the section title (e.g., "Overall Sentiment:").
+    *   For the "Key Themes" section, first state the title in a \`<p>\` tag, followed immediately by the themes formatted as an unordered list (\`<ul>\` with \`<li>\` items).
+    *   For the "Representative Quotes" section, present the quotes as a bulleted list (points). First, state the title in a \`<p>\` tag, followed immediately by an unordered list (\`<ul>\`) where each quote is an \`<li>\` item. Enclose each quote in quotation marks.
 
-3) OUTPUT FORMAT
-- Return exactly one JSON object with a single key:
-  { "summary": "<string>" }
-- The value of the "summary" key must be the generated paragraph.
-- Do not include any other text, commentary, or explanation.
+3.  **JSON Output Format:**
+    *   Return exactly one JSON object with a single key: \`summary\`.
+    *   The value of the \`summary\` key must be the complete HTML string.
+    *   The final HTML string must be a single line of text with no formatting newlines (\`\\n\`) inside it.
 
 Example Input:
 [
-  { "keyword": "UI", "sentiment": "positive", "content": "The new interface is so clean and easy to use!" },
-  { "keyword": "performance", "sentiment": "negative", "content": "The app has been really slow since the last update." },
-  { "keyword": "login", "sentiment": "negative", "content": "I keep getting logged out and have to re-enter my password." },
-  { "keyword": "design", "sentiment": "positive", "content": "I love the new look and feel, great job on the redesign." }
+  { "keyword": "food", "sentiment": "negative", "content": "The Cafeteria food is a bit stale and dry and its hardly palatable", "upvotes": 25 },
+  { "keyword": "space", "sentiment": "negative", "content": "The cafeteria doesn’t have enough space to sit during interval time at 11.30", "upvotes": 15 }
 ]
 
 Example Output:
-{ "summary": "Overall feedback is mixed. Users are highly positive about the new UI and design, praising its clean and modern look. However, significant concerns were raised regarding performance issues, with reports of slowness and recurring login problems." }
+{
+  "summary": "<p><strong>Overall Sentiment:</strong> Negative</p><br><p><strong>Key Themes:</strong></p><ul><li><strong>Poor Food Quality:</strong> Users report that the food served is stale, dry, and of low palatability, indicating a significant quality issue. This is the most upvoted concern.</li><li><strong>Insufficient Seating Capacity:</strong> There is a recurring problem with overcrowding and a lack of available seating, especially during peak hours.</li></ul><br><p><strong>Actionable Insight:</strong> The two primary issues are food quality and physical space. The most pressing concern, based on user upvotes, is the food quality, which should be addressed immediately.</p><br><p><strong>Representative Quotes:</strong></p><ul><li>\\"The Cafeteria food is a bit stale and dry and its hardly palatable\\"</li><li>\\"The cafeteria doesn’t have enough space to sit during interval time at 11.30\\"</li></ul>"
+}
 `;
 
 export const summarizeFeedback = action({
