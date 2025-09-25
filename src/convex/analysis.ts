@@ -133,8 +133,8 @@ export const findSimilarFeedbackAndReassignTopic = internalAction({
 			if (feedback) {
 				await ctx.runMutation(internal.feedback.publishFeedback, {
 					feedbackId: args.feedbackId,
-					keywords: feedback.keywords,
-					sentiment: feedback.sentiment
+					keywords: feedback.keywords ?? [],
+					sentiment: feedback.sentiment ?? 'neutral'
 				});
 			}
 			return true;

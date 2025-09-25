@@ -123,7 +123,7 @@ export const approveFeedback = mutation({
 	}
 });
 
-export const toggleFeedbackNoted = mutation({
+export const toggleFeedbackStatus = mutation({
 	args: {
 		feedbackId: v.id('feedbacks')
 	},
@@ -150,6 +150,22 @@ export const toggleFeedbackNoted = mutation({
 	}
 });
 
+export const setFeedbackStatusByIds = mutation({
+	args: {
+		feedbackIds: v.array(v.id('feedbacks'))
+	},
+	returns: v.null(),
+	handler: async (ctx, args) => {
+		await Promise.all(
+			args.feedbackIds.map(async (feedbackId) => {
+				const feedback = await ctx.db.get(feedbackId);
+				if (feedback && feedback.status === 'open') {
+					await ctx.db.patch(feedbackId, { status: 'noted' });
+				}
+			})
+		);
+	}
+});
 export const deleteFeedback = mutation({
 	args: {
 		feedbackId: v.id('feedbacks')
@@ -201,16 +217,10 @@ export const setFeedbackApproval = internalMutation({
 export const publishFeedback = internalMutation({
 	args: {
 		feedbackId: v.id('feedbacks'),
-		sentiment: v.optional(
-			v.union(v.literal('positive'), v.literal('negative'), v.literal('neutral'))
-		),
-		keywords: v.optional(v.array(v.string()))
+		sentiment: v.union(v.literal('positive'), v.literal('negative'), v.literal('neutral')),
+		keywords: v.array(v.string())
 	},
 	handler: async (ctx, args) => {
-		if (!args.sentiment || !args.keywords || args.keywords.length === 0) {
-			throw new Error('sentiment and non-empty keywords are required to publish feedback');
-		}
-
 		await ctx.db.patch(args.feedbackId, {
 			sentiment: args.sentiment,
 			keywords: args.keywords,
@@ -603,6 +613,20 @@ export const getFeedbackByEmbeddingId = internalQuery({
 			.withIndex('by_embeddingId', (q) => q.eq('embeddingId', args.embeddingId))
 			.first();
 		return feedback;
+	}
+});
+
+export const listFeedbackByIds = internalQuery({
+	args: { feedbackIds: v.array(v.id('feedbacks')) },
+	handler: async (ctx, args) => {
+		const feedbacks = await Promise.all(
+			args.feedbackIds.map(async (id) => {
+				const feedback = await ctx.db.get(id);
+				return feedback;
+			})
+		);
+
+		return feedbacks;
 	}
 });
 
