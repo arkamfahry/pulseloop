@@ -14,15 +14,21 @@
 		keywords: string[];
 		status: 'open' | 'noted';
 		sentiment: 'positive' | 'neutral' | 'negative';
+		selectedIds?: Id<'feedbacks'>[];
+		onSelectionChange?: (id: Id<'feedbacks'>, checked: boolean) => void;
 	}
 
 	const client = useConvexClient();
 
-	async function toggleFeedbackNoted() {
+	let { selectedIds, onSelectionChange, ...props }: Props = $props();
+
+	const isSelected = $derived.by(() => selectedIds?.includes(props.id));
+
+	async function toggleFeedbackStatus() {
 		try {
-			await client.mutation(api.feedback.toggleFeedbackNoted, { feedbackId: props.id });
+			await client.mutation(api.feedback.toggleFeedbackStatus, { feedbackId: props.id });
 		} catch (error) {
-			console.error('Error toggling feedback noted status:', error);
+			console.error('Error toggling feedback status:', error);
 		}
 	}
 
@@ -34,7 +40,10 @@
 		}
 	}
 
-	let props: Props = $props();
+	function handleCheckboxChange(event: Event) {
+		const target = event.target as HTMLInputElement;
+		onSelectionChange?.(props.id, target.checked);
+	}
 
 	function getSentimentColor(sentiment: string) {
 		switch (sentiment) {
@@ -64,7 +73,7 @@
 	<div class="flex w-full flex-col">
 		<div class="mb-2 flex w-full items-start justify-between gap-2">
 			<div class="flex items-center gap-2">
-				<Checkbox />
+				<Checkbox checked={isSelected} onchange={handleCheckboxChange} />
 				<span class="truncate text-sm font-semibold text-gray-900">{props.userName}</span>
 				<span class="px-1 text-sm text-gray-500"
 					>{new Date(props.date).toLocaleDateString(undefined, {
@@ -88,7 +97,7 @@
 					color={getStatusColor(props.status)}
 					size="sm"
 					class="p-1"
-					onclick={() => toggleFeedbackNoted()}
+					onclick={() => toggleFeedbackStatus()}
 				>
 					<CheckOutline size="md" />
 				</Button>
