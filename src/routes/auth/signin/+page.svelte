@@ -1,7 +1,6 @@
 <script lang="ts">
-	import { invalidateAll } from '$app/navigation';
+	import { goto } from '$app/navigation';
 	import { Card, Label, Input, Checkbox, Button } from 'flowbite-svelte';
-	import Navbar from '$lib/Navbar.svelte';
 	import { authClient } from '$lib/auth-client';
 
 	let error: string | null = $state(null);
@@ -16,7 +15,7 @@
 
 		try {
 			await authClient.signIn.email({ email, password });
-			await invalidateAll();
+			goto('/');
 		} catch (err: any) {
 			if (err?.message) {
 				error = err.message;
