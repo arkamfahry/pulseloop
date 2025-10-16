@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { authClient } from '$lib/auth-client.js';
-	import { goto } from '$app/navigation';
+	import { invalidateAll } from '$app/navigation';
 	import { Card, Label, Input, Button } from 'flowbite-svelte';
 
 	let error: string | null = $state(null);
@@ -16,7 +16,7 @@
 
 		try {
 			await authClient.signUp.email({ name, email, password });
-			goto('/');
+			await invalidateAll();
 		} catch (err: any) {
 			if (err?.message) {
 				error = err.message;

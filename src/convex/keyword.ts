@@ -1,0 +1,204 @@
+import { v } from 'convex/values';
+import { query, internalMutation } from './_generated/server';
+import { OrderedQuery, Query, QueryInitializer } from 'convex/server';
+import { DataModel, Id } from './_generated/dataModel';
+
+export const addKeywords = internalMutation({
+	args: {
+		keywords: v.array(v.string()),
+		feedbackId: v.id('feedbacks')
+	},
+	handler: async (ctx, args) => {
+		if (args.keywords.length === 0) return null;
+
+		await Promise.all(
+			args.keywords.map(async (keyword) => {
+				let existingKeyword = await ctx.db
+					.query('keywords')
+					.withIndex('by_keyword', (q) => q.eq('keyword', keyword))
+					.unique();
+
+				if (!existingKeyword) {
+					const _id = await ctx.db.insert('keywords', { keyword });
+					existingKeyword = await ctx.db.get(_id);
+				}
+
+				if (!existingKeyword) {
+					throw new Error('Failed to create or retrieve keyword');
+				}
+
+				const existingRelation = await ctx.db
+					.query('feedbackKeywords')
+					.withIndex('by_feedbackId_keywordId', (q) =>
+						q.eq('feedbackId', args.feedbackId).eq('keywordId', existingKeyword._id)
+					)
+					.unique();
+
+				if (!existingRelation) {
+					await ctx.db.insert('feedbackKeywords', {
+						feedbackId: args.feedbackId,
+						keywordId: existingKeyword._id
+					});
+				}
+			})
+		);
+	}
+});
+
+export const removeKeywords = internalMutation({
+	args: {
+		keywords: v.array(v.string()),
+		feedbackId: v.id('feedbacks')
+	},
+	handler: async (ctx, args) => {
+		if (args.keywords.length === 0) return null;
+
+		await Promise.all(
+			args.keywords.map(async (keyword) => {
+				const existing = await ctx.db
+					.query('keywords')
+					.withIndex('by_keyword', (q) => q.eq('keyword', keyword))
+					.unique();
+
+				if (!existing) {
+					return;
+				}
+
+				const feedbackKeyword = await ctx.db
+					.query('feedbackKeywords')
+					.withIndex('by_feedbackId_keywordId', (q) =>
+						q.eq('feedbackId', args.feedbackId).eq('keywordId', existing._id)
+					)
+					.unique();
+
+				if (feedbackKeyword) {
+					await ctx.db.delete(feedbackKeyword._id);
+				}
+			})
+		);
+	}
+});
+
+export const getKeywordCloud = query({
+	args: {
+		content: v.optional(v.string()),
+		sentiment: v.optional(
+			v.union(v.literal('positive'), v.literal('negative'), v.literal('neutral'))
+		),
+		status: v.optional(v.union(v.literal('open'), v.literal('noted'))),
+		topics: v.optional(v.array(v.string())),
+		from: v.optional(v.number()),
+		to: v.optional(v.number()),
+		votes: v.optional(v.union(v.literal('asc'), v.literal('desc')))
+	},
+	handler: async (ctx, args) => {
+		const tableQuery: QueryInitializer<DataModel['feedbacks']> = ctx.db.query('feedbacks');
+		let indexedQuery: Query<DataModel['feedbacks']> = tableQuery;
+		let orderedQuery: OrderedQuery<DataModel['feedbacks']> = indexedQuery;
+
+		if (args.content) {
+			orderedQuery = tableQuery.withSearchIndex('by_content', (q) => {
+				let expr = q.search('content', args.content!).eq('published', true);
+
+				if (args.sentiment) {
+					expr = expr.eq('sentiment', args.sentiment);
+				}
+
+				if (args.status) {
+					expr = expr.eq('status', args.status);
+				}
+
+				return expr;
+			});
+		} else {
+			if (args.sentiment && args.status) {
+				indexedQuery = tableQuery.withIndex('by_published_sentiment_status', (q) =>
+					q.eq('published', true).eq('sentiment', args.sentiment!).eq('status', args.status!)
+				);
+			} else if (args.sentiment) {
+				indexedQuery = tableQuery.withIndex('by_published_sentiment', (q) =>
+					q.eq('published', true).eq('sentiment', args.sentiment!)
+				);
+			} else if (args.status) {
+				indexedQuery = tableQuery.withIndex('by_published_status', (q) =>
+					q.eq('published', true).eq('status', args.status!)
+				);
+			} else {
+				indexedQuery = tableQuery.withIndex('by_published_sentiment', (q) =>
+					q.eq('published', true)
+				);
+			}
+
+			if (args.votes === 'asc') {
+				orderedQuery = indexedQuery.order('asc');
+			} else {
+				orderedQuery = indexedQuery.order('desc');
+			}
+		}
+
+		if (args.from && args.to) {
+			orderedQuery = orderedQuery.filter((q) =>
+				q.and(
+					q.gte(q.field('_creationTime'), args.from!),
+					q.lte(q.field('_creationTime'), args.to!)
+				)
+			);
+		}
+
+		type Sentiment = 'positive' | 'negative' | 'neutral';
+
+		type Keyword = {
+			id: Id<'keywords'>;
+			name: string;
+			count: number;
+			sentiment: Sentiment;
+		};
+
+		const keywordMap: Record<
+			string,
+			{
+				id: Id<'keywords'>;
+				name: string;
+				count: number;
+				sentimentCounts: Record<Sentiment, number>;
+			}
+		> = {};
+
+		const allKeywords = await ctx.db.query('keywords').collect();
+		const keywordLookup = new Map(allKeywords.map((t) => [t.keyword, t]));
+
+		for await (const feedback of orderedQuery) {
+			const feedbackKeywords: string[] = feedback.keywords ?? [];
+			const sentiment = feedback.sentiment as Sentiment | undefined;
+
+			for (const feedbackKeyword of feedbackKeywords) {
+				const keyword = keywordLookup.get(feedbackKeyword);
+				if (!keyword) continue;
+
+				if (!keywordMap[feedbackKeyword]) {
+					keywordMap[feedbackKeyword] = {
+						id: keyword._id,
+						name: keyword.keyword,
+						count: 0,
+						sentimentCounts: { positive: 0, negative: 0, neutral: 0 }
+					};
+				}
+				keywordMap[feedbackKeyword].count++;
+				if (sentiment) {
+					keywordMap[feedbackKeyword].sentimentCounts[sentiment]++;
+				}
+			}
+		}
+
+		const result: Record<string, Keyword> = {};
+		for (const [key, value] of Object.entries(keywordMap)) {
+			const { id, name, count, sentimentCounts } = value;
+			const sentiment =
+				(Object.entries(sentimentCounts).reduce((a, b) => (b[1] > a[1] ? b : a))[0] as Sentiment) ??
+				'neutral';
+			result[key] = { id, name, count, sentiment };
+		}
+
+		return result;
+	}
+});

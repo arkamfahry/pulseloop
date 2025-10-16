@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { Button, Navbar, NavBrand } from 'flowbite-svelte';
 	import logo from '$lib/assets/favicon.svg';
-	import { useAuth } from '@mmailaender/convex-better-auth-svelte/svelte';
 	import { authClient } from '$lib/auth-client';
+	import { useAuth } from '@mmailaender/convex-better-auth-svelte/svelte';
+	import { Button, Navbar, NavBrand } from 'flowbite-svelte';
 
 	let { variant }: { variant: 'app' | 'auth' } = $props();
 

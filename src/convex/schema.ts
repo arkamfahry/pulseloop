@@ -4,12 +4,7 @@ import { v } from 'convex/values';
 export default defineSchema({
 	users: defineTable({
 		name: v.optional(v.string()),
-		image: v.optional(v.string()),
 		email: v.optional(v.string()),
-		emailVerificationTime: v.optional(v.number()),
-		phone: v.optional(v.string()),
-		phoneVerificationTime: v.optional(v.number()),
-		isAnonymous: v.optional(v.boolean()),
 		role: v.optional(v.union(v.literal('user'), v.literal('admin')))
 	}).index('email', ['email']),
 
@@ -24,26 +19,13 @@ export default defineSchema({
 		votes: v.number(),
 		published: v.boolean(),
 		userId: v.id('users'),
-		embeddingId: v.optional(v.id('feedbackEmbeddings')),
-		createdAt: v.number()
+		embeddingId: v.optional(v.id('feedbackEmbeddings'))
 	})
 		.index('by_embeddingId', ['embeddingId'])
-		.index('by_userId_votes', ['userId', 'votes'])
-		.index('by_published_votes', ['published', 'votes'])
-		.index('by_published_sentiment_createdAt_votes', [
-			'published',
-			'sentiment',
-			'createdAt',
-			'votes'
-		])
-		.index('by_published_status_createdAt_votes', ['published', 'status', 'createdAt', 'votes'])
-		.index('by_published_sentiment_status_createdAt_votes', [
-			'published',
-			'sentiment',
-			'status',
-			'createdAt',
-			'votes'
-		])
+		.index('by_userId_published', ['userId', 'published'])
+		.index('by_published_sentiment', ['published', 'sentiment'])
+		.index('by_published_status', ['published', 'status'])
+		.index('by_published_sentiment_status', ['published', 'sentiment', 'status'])
 		.searchIndex('by_content', {
 			searchField: 'content',
 			filterFields: ['published', 'sentiment', 'status', 'userId']
